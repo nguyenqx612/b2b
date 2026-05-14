@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; color: #222; }
+  h1 { font-size: 20px; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #666; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .section-title { font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th { background: #f0f0f0; padding: 8px; text-align: left; border: 1px solid #ccc; }
+  td { padding: 8px; border: 1px solid #ccc; }
+  .footer { margin-top: 40px; font-size: 10px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>COMMERCIAL INVOICE</h1>
+  <div class="subtitle">PO Number: {{poNumber}} &nbsp;|&nbsp; Date: {{date}}</div>
+
+  <div class="grid">
+    <div>
+      <div class="section-title">Exporter / Seller</div>
+      <div>{{sellerCompany}}</div>
+      <div>{{sellerAddress}}</div>
+      <div>Tax ID: {{sellerTaxId}}</div>
+    </div>
+    <div>
+      <div class="section-title">Consignee / Buyer</div>
+      <div>{{buyerCompany}}</div>
+      <div>{{buyerAddress}}</div>
+      <div>Tax ID: {{buyerTaxId}}</div>
+    </div>
+  </div>
+
+  <div><strong>Port of Loading:</strong> {{portOfLoading}}</div>
+  <div><strong>Port of Discharge:</strong> {{portOfDischarge}}</div>
+  <div><strong>Terms of Sale:</strong> {{shippingTerms}}</div>
+
+  <table>
+    <thead>
+      <tr><th>Description</th><th>SKU</th><th>HS Code</th><th>Quantity</th></tr>
+    </thead>
+    <tbody>{{itemRows}}</tbody>
+  </table>
+
+  <div class="footer">This is a computer-generated document.</div>
+</body>
+</html>

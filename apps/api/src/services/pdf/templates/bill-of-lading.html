@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; color: #222; }
+  h1 { font-size: 18px; text-align: center; }
+  h2 { font-size: 12px; text-align: center; color: #555; margin-bottom: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .box { border: 1px solid #888; padding: 10px; }
+  .box-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #555; margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { background: #f0f0f0; padding: 7px; border: 1px solid #ccc; text-align: left; }
+  td { padding: 7px; border: 1px solid #ccc; }
+  .sig { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .sig-line { border-top: 1px solid #333; margin-top: 48px; padding-top: 4px; font-size: 10px; }
+  .footer { margin-top: 20px; font-size: 9px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>BILL OF LADING</h1>
+  <h2>Reference: {{poNumber}} &nbsp;|&nbsp; Date: {{date}}</h2>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">Shipper / Exporter</div>
+      <div>{{sellerCompany}}</div>
+      <div>{{sellerAddress}}</div>
+    </div>
+    <div class="box">
+      <div class="box-title">Consignee</div>
+      <div>{{buyerCompany}}</div>
+      <div>{{buyerAddress}}</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">Port of Loading</div>
+      <div>{{portOfLoading}}</div>
+    </div>
+    <div class="box">
+      <div class="box-title">Port of Discharge</div>
+      <div>{{portOfDischarge}}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Description of Goods</th><th>SKU</th><th>HS Code</th><th>Quantity</th></tr>
+    </thead>
+    <tbody>{{itemRows}}</tbody>
+  </table>
+
+  <div class="sig">
+    <div>
+      <div class="box-title">Shipper's Signature</div>
+      <div class="sig-line">Signature &amp; Date</div>
+    </div>
+    <div>
+      <div class="box-title">Carrier's Signature</div>
+      <div class="sig-line">Signature &amp; Date</div>
+    </div>
+  </div>
+
+  <div class="footer">This Bill of Lading is subject to the terms and conditions on the reverse side. Received in apparent good order and condition.</div>
+</body>
+</html>

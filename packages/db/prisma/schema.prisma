@@ -1,0 +1,309 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  buyer
+  seller
+  admin
+}
+
+enum OrderStatus {
+  draft
+  submitted
+  acknowledged
+  confirmed
+  in_production
+  ready_to_ship
+  shipped
+  delivered
+  cancelled
+}
+
+enum MessageType {
+  text
+  file
+  system
+}
+
+enum DocType {
+  commercial_invoice
+  packing_list
+  co_form_b
+  phytosanitary
+  bill_of_lading
+  proforma_invoice
+  us_import_declaration
+}
+
+// ─────────────────────────────────────────────────────────────
+// Users
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  role           Role
+  companyName    String?  @map("company_name") @db.VarChar(200)
+  companyAddress String?  @map("company_address") @db.VarChar(500)
+  taxId          String?  @map("tax_id") @db.VarChar(50)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  products          Product[]
+  buyerOrders       PurchaseOrder[] @relation("BuyerOrders")
+  sellerOrders      PurchaseOrder[] @relation("SellerOrders")
+  poVersionsChanged POVersion[]
+  messagesSent      Message[]
+  docsGenerated     ExportDocument[]
+  containerLoads    ContainerLoad[]
+  costBreakdowns    CostBreakdown[]
+  buyerInvoices     ProformaInvoice[] @relation("BuyerInvoices")
+  sellerInvoices    ProformaInvoice[] @relation("SellerInvoices")
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Products
+// ─────────────────────────────────────────────────────────────
+
+model Product {
+  id            String   @id @default(uuid())
+  sellerId      String   @map("seller_id")
+  seller        User     @relation(fields: [sellerId], references: [id])
+  sku           String   @db.VarChar(100)
+  name          String   @db.VarChar(300)
+  description   String?  @db.Text
+  category      String   @db.VarChar(100)
+  unit          String   @db.VarChar(50)
+  // Seller-only — never returned in buyer-facing queries
+  priceUsdCents Int      @map("price_usd_cents")
+  // Range shown to buyers
+  priceRangeMin Int      @map("price_range_min")
+  priceRangeMax Int      @map("price_range_max")
+  cbmPerUnit    Decimal  @map("cbm_per_unit") @db.Decimal(10, 4)
+  weightKg      Decimal? @map("weight_kg") @db.Decimal(10, 3)
+  hsCode        String?  @map("hs_code") @db.VarChar(20)
+  originCountry String   @default("VN") @map("origin_country") @db.VarChar(2)
+  images        String[] // S3 keys
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  poItems POItem[]
+
+  @@unique([sellerId, sku])
+  @@index([sellerId], map: "idx_products_seller")
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Purchase Orders
+// ─────────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id               String      @id @default(uuid())
+  poNumber         String      @unique @map("po_number") @db.VarChar(50)
+  buyerId          String      @map("buyer_id")
+  buyer            User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId         String      @map("seller_id")
+  seller           User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  status           OrderStatus @default(draft)
+  currentVersion   Int         @default(1) @map("current_version")
+  notes            String?     @db.Text
+  shippingTerms    String?     @map("shipping_terms") @db.VarChar(50)
+  portOfLoading    String?     @map("port_of_loading") @db.VarChar(200)
+  portOfDischarge  String?     @map("port_of_discharge") @db.VarChar(200)
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  items            POItem[]
+  versions         POVersion[]
+  messages         Message[]
+  exportDocs       ExportDocument[]
+  containerLoads   ContainerLoad[]
+  costBreakdowns   CostBreakdown[]
+  proformaInvoices ProformaInvoice[]
+
+  @@index([buyerId], map: "idx_po_buyer")
+  @@index([sellerId], map: "idx_po_seller")
+  @@map("purchase_orders")
+}
+
+// Append-only version history — never update rows
+model POVersion {
+  id            String        @id @default(uuid())
+  poId          String        @map("po_id")
+  po            PurchaseOrder @relation(fields: [poId], references: [id])
+  versionNumber Int           @map("version_number")
+  changedBy     String        @map("changed_by")
+  changedByUser User          @relation(fields: [changedBy], references: [id])
+  changeReason  String?       @map("change_reason") @db.VarChar(500)
+  snapshot      Json          // full PO state at this version
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@unique([poId, versionNumber])
+  @@map("po_versions")
+}
+
+model POItem {
+  id             String        @id @default(uuid())
+  poId           String        @map("po_id")
+  po             PurchaseOrder @relation(fields: [poId], references: [id])
+  productId      String        @map("product_id")
+  product        Product       @relation(fields: [productId], references: [id])
+  quantity       Int
+  unitPriceCents Int           @map("unit_price_cents")
+  cbmSubtotal    Decimal       @map("cbm_subtotal") @db.Decimal(10, 4)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_po_items_po")
+  @@map("po_items")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pro Forma Invoices (PI isolation enforced by buyerId index)
+// ─────────────────────────────────────────────────────────────
+
+model ProformaInvoice {
+  id             String        @id @default(uuid())
+  piNumber       String        @unique @map("pi_number") @db.VarChar(50)
+  poId           String        @map("po_id")
+  po             PurchaseOrder @relation(fields: [poId], references: [id])
+  // Denormalized for isolation queries — every buyer query MUST filter by this
+  buyerId        String        @map("buyer_id")
+  buyer          User          @relation("BuyerInvoices", fields: [buyerId], references: [id])
+  sellerId       String        @map("seller_id")
+  seller         User          @relation("SellerInvoices", fields: [sellerId], references: [id])
+  subtotalCents  Int           @map("subtotal_cents")
+  shippingCents  Int           @default(0) @map("shipping_cents")
+  taxCents       Int           @default(0) @map("tax_cents")
+  totalCents     Int           @map("total_cents")
+  paymentTerms   String?       @map("payment_terms") @db.VarChar(200)
+  validityDays   Int           @default(30) @map("validity_days")
+  pdfS3Key       String?       @map("pdf_s3_key")
+  issuedAt       DateTime      @default(now()) @map("issued_at")
+  expiresAt      DateTime?     @map("expires_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  @@index([buyerId], map: "idx_pi_buyer")
+  @@map("proforma_invoices")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Container Simulation
+// ─────────────────────────────────────────────────────────────
+
+model ContainerLoad {
+  id              String        @id @default(uuid())
+  poId            String        @map("po_id")
+  po              PurchaseOrder @relation(fields: [poId], references: [id])
+  calculatedBy    String        @map("calculated_by")
+  user            User          @relation(fields: [calculatedBy], references: [id])
+  totalCbm        Decimal       @map("total_cbm") @db.Decimal(10, 4)
+  containerType   String        @default("40ft") @map("container_type") @db.VarChar(20)
+  containerCbm    Decimal       @default(67.3) @map("container_cbm") @db.Decimal(10, 4)
+  containersNeeded Decimal      @map("containers_needed") @db.Decimal(6, 4)
+  utilizationPct  Decimal       @map("utilization_pct") @db.Decimal(5, 2)
+  itemsSnapshot   Json          @map("items_snapshot")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@map("container_loads")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Export Documents
+// ─────────────────────────────────────────────────────────────
+
+model ExportDocument {
+  id           String        @id @default(uuid())
+  poId         String        @map("po_id")
+  po           PurchaseOrder @relation(fields: [poId], references: [id])
+  docType      DocType       @map("doc_type")
+  pdfS3Key     String?       @map("pdf_s3_key")
+  generatedBy  String        @map("generated_by")
+  user         User          @relation(fields: [generatedBy], references: [id])
+  documentData Json          @map("document_data")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@map("export_documents")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Messaging
+// ─────────────────────────────────────────────────────────────
+
+model Message {
+  id            String        @id @default(uuid())
+  poId          String        @map("po_id")
+  po            PurchaseOrder @relation(fields: [poId], references: [id])
+  senderId      String        @map("sender_id")
+  sender        User          @relation(fields: [senderId], references: [id])
+  messageType   MessageType   @default(text) @map("message_type")
+  body          String?       @db.Text
+  fileS3Key     String?       @map("file_s3_key")
+  fileName      String?       @map("file_name") @db.VarChar(255)
+  fileSizeBytes Int?          @map("file_size_bytes")
+  isRead        Boolean       @default(false) @map("is_read")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@index([poId, createdAt(sort: Desc)], map: "idx_messages_po")
+  @@map("messages")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Cost Breakdown
+// ─────────────────────────────────────────────────────────────
+
+model CostBreakdown {
+  id                 String        @id @default(uuid())
+  poId               String        @map("po_id")
+  po                 PurchaseOrder @relation(fields: [poId], references: [id])
+  goodsFobCents      Int           @map("goods_fob_cents")
+  freightCents       Int           @default(0) @map("freight_cents")
+  insuranceCents     Int           @default(0) @map("insurance_cents")
+  customsDutyCents   Int           @default(0) @map("customs_duty_cents")
+  portHandlingCents  Int           @default(0) @map("port_handling_cents")
+  otherCents         Int           @default(0) @map("other_cents")
+  totalLandedCents   Int           @map("total_landed_cents")
+  currency           String        @default("USD") @db.VarChar(3)
+  notes              String?       @db.Text
+  createdBy          String        @map("created_by")
+  user               User          @relation(fields: [createdBy], references: [id])
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  @@map("cost_breakdowns")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit Log (append-only)
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String   @map("actor_id")
+  actor      User     @relation(fields: [actorId], references: [id])
+  action     String   @db.VarChar(100) // e.g. 'po.created', 'user.role_changed'
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String   @map("entity_id") @db.Uuid
+  metadata   Json?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, createdAt(sort: Desc)], map: "idx_audit_entity")
+  @@map("audit_logs")
+}

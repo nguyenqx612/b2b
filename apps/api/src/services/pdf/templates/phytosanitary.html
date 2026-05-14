@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; color: #222; }
+  h1 { font-size: 18px; text-align: center; }
+  h2 { font-size: 13px; text-align: center; color: #555; margin-top: 2px; margin-bottom: 24px; }
+  .ref { display: flex; justify-content: space-between; margin-bottom: 16px; }
+  .box { border: 1px solid #888; padding: 10px; margin-bottom: 10px; }
+  .box-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #555; margin-bottom: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .treatment { margin-top: 16px; padding: 12px; border: 2px solid #333; }
+  .sig { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .sig-line { border-top: 1px solid #333; margin-top: 32px; padding-top: 4px; font-size: 10px; }
+  .footer { margin-top: 20px; font-size: 9px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>PHYTOSANITARY CERTIFICATE</h1>
+  <h2>Socialist Republic of Vietnam — Ministry of Agriculture and Rural Development</h2>
+
+  <div class="ref">
+    <div><strong>Certificate No:</strong> PC-{{poNumber}}</div>
+    <div><strong>Date of Issue:</strong> {{date}}</div>
+  </div>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">Name and Address of Exporter</div>
+      <div>{{sellerCompany}}</div>
+      <div>{{sellerAddress}}</div>
+      <div>Vietnam</div>
+    </div>
+    <div class="box">
+      <div class="box-title">Name and Address of Consignee</div>
+      <div>{{buyerCompany}}</div>
+      <div>{{buyerAddress}}</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">Country of Origin</div>
+      <div>Vietnam</div>
+    </div>
+    <div class="box">
+      <div class="box-title">Country of Destination</div>
+      <div>United States of America</div>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="box-title">Description of Consignment</div>
+    <div><strong>PO Reference:</strong> {{poNumber}}</div>
+    <div><strong>Port of Entry:</strong> {{portOfDischarge}}</div>
+    <div><strong>Declared means of conveyance:</strong> Sea Freight</div>
+  </div>
+
+  <div class="treatment">
+    <strong>DECLARATION</strong><br><br>
+    This is to certify that the plants, plant products, or other regulated articles described herein have been inspected and/or tested according to appropriate official procedures and are considered to be free from the quarantine pests specified by the importing contracting party and to conform with the current phytosanitary requirements of the importing contracting party.
+  </div>
+
+  <div class="sig">
+    <div>
+      <div class="box-title">Signature of Authorized Officer</div>
+      <div class="sig-line">Signature &amp; Official Stamp</div>
+    </div>
+    <div>
+      <div class="box-title">Issuing Organization</div>
+      <div>Plant Protection Department</div>
+      <div>Ministry of Agriculture and Rural Development</div>
+      <div>Socialist Republic of Vietnam</div>
+    </div>
+  </div>
+
+  <div class="footer">Issued in accordance with the International Plant Protection Convention (IPPC).</div>
+</body>
+</html>

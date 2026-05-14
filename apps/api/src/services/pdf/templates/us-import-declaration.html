@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; color: #222; }
+  h1 { font-size: 18px; text-align: center; }
+  h2 { font-size: 12px; text-align: center; color: #555; margin-bottom: 24px; }
+  .box { border: 1px solid #888; padding: 10px; margin-bottom: 10px; }
+  .box-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #555; margin-bottom: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { background: #f0f0f0; padding: 7px; border: 1px solid #ccc; text-align: left; font-size: 11px; }
+  td { padding: 7px; border: 1px solid #ccc; }
+  .sig-line { border-top: 1px solid #333; margin-top: 48px; padding-top: 4px; font-size: 10px; }
+  .footer { margin-top: 20px; font-size: 9px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>U.S. CUSTOMS — IMPORT DECLARATION</h1>
+  <h2>Entry Summary Reference — CBP Form 7501 Supporting Document</h2>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">Importer of Record</div>
+      <div>{{buyerCompany}}</div>
+      <div>{{buyerAddress}}</div>
+      <div>Tax ID / EIN: {{buyerTaxId}}</div>
+    </div>
+    <div class="box">
+      <div class="box-title">Exporter / Shipper</div>
+      <div>{{sellerCompany}}</div>
+      <div>{{sellerAddress}}</div>
+      <div>Country of Export: Vietnam</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">Port of Lading</div>
+      <div>{{portOfLoading}}</div>
+    </div>
+    <div class="box">
+      <div class="box-title">U.S. Port of Entry</div>
+      <div>{{portOfDischarge}}</div>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="box-title">Reference Numbers</div>
+    <div><strong>Purchase Order:</strong> {{poNumber}}</div>
+    <div><strong>Date of Export:</strong> {{date}}</div>
+    <div><strong>Country of Origin:</strong> Vietnam</div>
+    <div><strong>Terms of Sale:</strong> {{shippingTerms}}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Description of Merchandise</th><th>SKU</th><th>HTS Code</th><th>Qty</th></tr>
+    </thead>
+    <tbody>{{itemRows}}</tbody>
+  </table>
+
+  <div class="box" style="margin-top:16px">
+    <div class="box-title">Certification</div>
+    I hereby make oath that the statements in this declaration are true and correct to the best of my knowledge and belief, and that the merchandise was purchased at a price actually paid or payable.
+    <div class="sig-line">Importer / Agent Signature &amp; Date</div>
+  </div>
+
+  <div class="footer">This document is prepared for U.S. Customs and Border Protection purposes. Retain for 5 years.</div>
+</body>
+</html>

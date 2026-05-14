@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11px; margin: 30px; color: #111; }
+  h1 { font-size: 16px; text-align: center; font-weight: bold; }
+  h2 { font-size: 13px; text-align: center; color: #555; margin-top: 2px; }
+  .ref { text-align: right; font-size: 10px; color: #888; margin-bottom: 12px; }
+  .box { border: 1px solid #333; padding: 10px; margin-bottom: 8px; }
+  .box-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #666; margin-bottom: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #eee; padding: 6px; border: 1px solid #999; font-size: 10px; }
+  td { padding: 6px; border: 1px solid #999; vertical-align: top; }
+  .sig { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .sig-line { border-top: 1px solid #333; margin-top: 32px; padding-top: 4px; font-size: 10px; }
+  .footer { margin-top: 20px; font-size: 9px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>CERTIFICATE OF ORIGIN</h1>
+  <h2>Form B (ASEAN — Issued under the ASEAN Trade in Goods Agreement)</h2>
+  <div class="ref">Reference No: {{poNumber}}</div>
+
+  <div class="grid2">
+    <div class="box">
+      <div class="box-title">1. Exporter's Name, Address, Country</div>
+      <div>{{sellerCompany}}</div>
+      <div>{{sellerAddress}}</div>
+      <div>Vietnam</div>
+    </div>
+    <div class="box">
+      <div class="box-title">2. Consignee's Name, Address, Country</div>
+      <div>{{buyerCompany}}</div>
+      <div>{{buyerAddress}}</div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="box">
+      <div class="box-title">3. Means of Transport & Route</div>
+      <div>Port of Loading: {{portOfLoading}}</div>
+      <div>Port of Discharge: {{portOfDischarge}}</div>
+    </div>
+    <div class="box">
+      <div class="box-title">4. For Official Use</div>
+      <div style="height:40px"></div>
+    </div>
+    <div class="box">
+      <div class="box-title">5. Date of Issue</div>
+      <div>{{date}}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item No.</th>
+        <th>Description of Goods</th>
+        <th>HS Code</th>
+        <th>Qty</th>
+        <th>Origin Criterion</th>
+      </tr>
+    </thead>
+    <tbody>{{itemRows}}</tbody>
+  </table>
+
+  <div class="sig">
+    <div>
+      <div class="box-title">Declaration by the Exporter</div>
+      <div>The undersigned hereby declares that the above details and statements are correct, and that all the goods were produced in <strong>Vietnam</strong>.</div>
+      <div class="sig-line">Authorised Signature &amp; Stamp</div>
+    </div>
+    <div>
+      <div class="box-title">Certification</div>
+      <div>It is hereby certified that the declaration by the exporter is correct.</div>
+      <div class="sig-line">Competent Authority Signature</div>
+    </div>
+  </div>
+
+  <div class="footer">Issued in Vietnam in accordance with ATIGA Certificate of Origin requirements.</div>
+</body>
+</html>
