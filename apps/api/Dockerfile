@@ -14,12 +14,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-COPY package.json ./
+COPY package.json tsconfig.base.json ./
+COPY scripts/ ./scripts/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/db/package.json ./packages/db/
 COPY apps/api/package.json ./apps/api/
 
-RUN npm install --workspaces --include-workspace-root
+RUN npm install --workspaces --include-workspace-root --ignore-scripts
 
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/

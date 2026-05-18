@@ -2,18 +2,20 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: b2b
-      POSTGRES_PASSWORD: b2b_dev_password
-      POSTGRES_DB: b2b_dev
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U b2b -d b2b_dev"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - b2b_default
 
   redis:
     image: redis:7-alpine
@@ -26,13 +28,15 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - b2b_default
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -43,6 +47,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - b2b_default
 
   minio-init:
     image: minio/mc:latest
@@ -51,11 +57,13 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        mc alias set local http://minio:9000 minioadmin minioadmin;
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
         mc mb --ignore-existing local/b2b-dev;
         mc anonymous set download local/b2b-dev;
         exit 0;
       "
+    networks:
+      - b2b_default
 
   api:
     build:
@@ -65,13 +73,15 @@ services:
       - "3001:3001"
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://b2b:b2b_dev_password@postgres:5432/b2b_dev
-      REDIS_URL: redis://redis:6379
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: minioadmin
-      S3_SECRET_KEY: minioadmin
-      S3_BUCKET: b2b-dev
-      S3_FORCE_PATH_STYLE: "true"
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE}
+      JWT_SECRET: ${JWT_SECRET}
+      API_JWT_SECRET: ${API_JWT_SECRET}
       NODE_ENV: development
     depends_on:
       postgres:
@@ -80,28 +90,37 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
-    volumes:
-      - ./apps/api/src:/app/apps/api/src
-      - ./packages:/app/packages
+    networks:
+      - b2b_default
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
     ports:
       - "3000:3000"
     env_file: .env
     environment:
-      API_URL: http://api:3001
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXT_PUBLIC_WS_URL: http://localhost:3001
+      API_URL: http://b2b-api-1:3001
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_URL: http://b2b-web-1:3000
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_NEXTAUTH_SECRET: ${AUTH_NEXTAUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
       NODE_ENV: development
     depends_on:
       - api
-    volumes:
-      - ./apps/web/src:/app/apps/web/src
+    networks:
+      - b2b_default
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  b2b_default:
+    driver: bridge

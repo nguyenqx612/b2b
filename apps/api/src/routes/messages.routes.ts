@@ -77,3 +77,19 @@ messagesRouter.post(
     }
   },
 );
+
+// Get signed URL for downloading a file
+messagesRouter.get('/s3-signed-url', authenticate, async (req, res, next) => {
+  try {
+    const { key } = req.query;
+    if (typeof key !== 'string' || !key) {
+      res.status(400).json({ error: 'key parameter required' });
+      return;
+    }
+
+    const url = await s3Service.getSignedUrl(key);
+    res.json({ url });
+  } catch (err) {
+    next(err);
+  }
+});

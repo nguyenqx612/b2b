@@ -7,6 +7,8 @@ const PO_INCLUDE = {
       product: { select: { name: true, sku: true, cbmPerUnit: true } },
     },
   },
+  buyer:  { select: { id: true, email: true, companyName: true } },
+  seller: { select: { id: true, email: true, companyName: true } },
 } satisfies Prisma.PurchaseOrderInclude;
 
 export async function findAllForUser(userId: string, role: 'buyer' | 'seller' | 'admin') {

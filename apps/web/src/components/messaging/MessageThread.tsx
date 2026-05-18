@@ -9,6 +9,7 @@ interface Message {
   messageType: 'text' | 'file' | 'system';
   body: string | null;
   fileName: string | null;
+  fileS3Key: string | null;
   sender: { email: string; companyName: string | null; role: string };
   createdAt: string;
 }
@@ -19,11 +20,54 @@ interface Props {
   token: string;
 }
 
+function FileDownloadLink({ s3Key, fileName, token }: { s3Key: string; fileName: string | null; token: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
+  async function getSignedUrl() {
+    if (url) {
+      window.open(url, '_blank');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/messages/s3-signed-url?key=${encodeURIComponent(s3Key)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to get download link');
+      const data = await res.json();
+      setUrl(data.url);
+      window.open(data.url, '_blank');
+    } catch (err) {
+      console.error('Error getting signed URL:', err);
+      alert('Failed to get download link');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={getSignedUrl}
+      disabled={loading}
+      className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:bg-blue-100 transition disabled:opacity-50"
+      type="button"
+    >
+      📎 <span className="text-blue-600 underline">{loading ? 'Loading...' : fileName}</span>
+    </button>
+  );
+}
+
 export function MessageThread({ poId, initialMessages, token }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -69,6 +113,39 @@ export function MessageThread({ poId, initialMessages, token }: Props) {
     typingTimeout.current = setTimeout(() => socket.emit('typing:stop', poId), 2000);
   }
 
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+      const res = await fetch(`${API}/api/messages/${poId}/attachments`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to upload file');
+      }
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, data.message]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      console.error('File upload error:', err);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white flex flex-col h-[600px]">
       <div className="border-b px-4 py-3 font-semibold text-sm">Messages</div>
@@ -88,10 +165,8 @@ export function MessageThread({ poId, initialMessages, token }: Props) {
             {msg.messageType === 'text' && (
               <p className="text-gray-700 break-words">{msg.body}</p>
             )}
-            {msg.messageType === 'file' && (
-              <div className="inline-flex items-center gap-2 rounded-md border bg-gray-50 px-3 py-1.5 text-xs">
-                📎 <span className="text-blue-600">{msg.fileName}</span>
-              </div>
+            {msg.messageType === 'file' && msg.fileS3Key && (
+              <FileDownloadLink s3Key={msg.fileS3Key} fileName={msg.fileName} token={token} />
             )}
           </div>
         ))}
@@ -104,6 +179,21 @@ export function MessageThread({ poId, initialMessages, token }: Props) {
       </div>
 
       <form onSubmit={sendMessage} className="border-t px-4 py-3 flex gap-2">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex-shrink-0 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+          title="Attach file"
+        >
+          📎
+        </button>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

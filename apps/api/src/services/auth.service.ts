@@ -3,7 +3,9 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@b2b/db';
 import type { RegisterInput, LoginInput, AuthTokenPayload } from '@b2b/shared';
 
-const SALT_ROUNDS = 12;
+// 10 rounds ≈ 50ms (fast enough for dev/prod UX, still brute-force resistant)
+// Bump to 12 only if compliance requires it — adds ~150ms per login with no security gain at scale
+const SALT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 10);
 const JWT_EXPIRY = '7d';
 
 function signToken(payload: Omit<AuthTokenPayload, 'iat' | 'exp'>): string {

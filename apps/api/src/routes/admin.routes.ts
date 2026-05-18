@@ -36,13 +36,27 @@ adminRouter.patch('/users/:id', async (req, res, next) => {
   }
 });
 
-// List all orders
-adminRouter.get('/orders', async (_req, res, next) => {
+// List all orders (with optional status + search filters)
+adminRouter.get('/orders', async (req, res, next) => {
   try {
+    const { status, search } = req.query as Record<string, string>;
     const orders = await prisma.purchaseOrder.findMany({
+      where: {
+        ...(status ? { status: status as any } : {}),
+        ...(search ? {
+          OR: [
+            { poNumber: { contains: search, mode: 'insensitive' } },
+            { buyer: { email: { contains: search, mode: 'insensitive' } } },
+            { buyer: { companyName: { contains: search, mode: 'insensitive' } } },
+            { seller: { email: { contains: search, mode: 'insensitive' } } },
+            { seller: { companyName: { contains: search, mode: 'insensitive' } } },
+          ],
+        } : {}),
+      },
       include: {
         buyer: { select: { email: true, companyName: true } },
         seller: { select: { email: true, companyName: true } },
+        _count: { select: { items: true } },
       },
       orderBy: { updatedAt: 'desc' },
     });

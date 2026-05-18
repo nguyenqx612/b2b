@@ -13,14 +13,16 @@ export const productsRouter = Router();
 productsRouter.get('/', authenticate, async (req, res, next) => {
   try {
     const { category, search, page, pageSize } = req.query as Record<string, string>;
+    const parsedPage = Math.max(1, Number(page) || 1);
+    const parsedPageSize = Math.min(100, Math.max(1, Number(pageSize) || 20));
     if (req.user!.role === ROLES.SELLER) {
       const result = await productService.listForSeller(req.user!.sub, {
-        category, search, page: Number(page), pageSize: Number(pageSize),
+        category, search, page: parsedPage, pageSize: parsedPageSize,
       });
       res.json(result);
     } else {
       const result = await productService.listForBuyer({
-        category, search, page: Number(page), pageSize: Number(pageSize),
+        category, search, page: parsedPage, pageSize: parsedPageSize,
       });
       res.json(result);
     }

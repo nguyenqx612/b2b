@@ -8,8 +8,10 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   }
 
   if (err instanceof Error) {
-    console.error(err);
-    res.status(500).json({ error: err.message || 'Internal server error' });
+    // Services attach a numeric .status via Object.assign(new Error(...), { status: 4xx })
+    const httpStatus = typeof (err as any).status === 'number' ? (err as any).status : 500;
+    if (httpStatus >= 500) console.error(err);
+    res.status(httpStatus).json({ error: err.message || 'Internal server error' });
     return;
   }
 

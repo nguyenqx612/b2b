@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "node scripts/ensure-env.js",
     "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/db && npm run build --workspace=apps/api && npm run build --workspace=apps/web",
     "typecheck": "npm run typecheck --workspace=packages/shared && npm run typecheck --workspace=packages/db && npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web",
@@ -26,5 +27,8 @@
   },
   "overrides": {
     "@types/express-serve-static-core": "^4.19.6"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0"
   }
 }

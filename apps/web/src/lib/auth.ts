@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import { loginSchema } from '@b2b/shared';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
@@ -10,19 +11,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const parsed = loginSchema.safeParse(credentials);
-        if (!parsed.success) return null;
+        try {
+          const parsed = loginSchema.safeParse(credentials);
+          if (!parsed.success) {
+            console.error('[Auth] Login schema validation failed:', parsed.error);
+            return null;
+          }
 
-        const res = await fetch(`${process.env.API_URL}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(parsed.data),
-        });
+          const apiUrl = process.env.API_URL || 'http://b2b-api-1:3001';
+          console.log('[Auth] Attempting login to:', apiUrl);
 
-        if (!res.ok) return null;
+          const res = await fetch(`${apiUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsed.data),
+          });
 
-        const { user, token } = await res.json();
-        return { ...user, accessToken: token };
+          if (!res.ok) {
+            const errorBody = await res.text();
+            console.error('[Auth] API error:', res.status, errorBody);
+            return null;
+          }
+
+          const { user, token } = await res.json();
+          console.log('[Auth] Login successful for:', user.email);
+          return { ...user, accessToken: token };
+        } catch (error) {
+          console.error('[Auth] authorize() exception:', error);
+          return null;
+        }
       },
     }),
   ],
@@ -45,7 +62,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   pages: {
-    signIn: '/login',
+    signIn: '/auth/login',
   },
   session: { strategy: 'jwt' },
 });
