@@ -69,7 +69,16 @@
       "Bash(wsl -d Ubuntu -e docker compose build)",
       "Bash(wsl -d Ubuntu -e docker compose build --no-cache web)",
       "Bash(wsl -d Ubuntu -e docker compose build --no-cache api)",
-      "Bash(wsl -d Ubuntu -e docker compose up -d)"
+      "Bash(wsl -d Ubuntu -e docker compose up -d)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(wsl -d Ubuntu -e docker compose ps)",
+      "Bash(git commit -m 'fix: use relative redirects to preserve original hostname in middleware *)",
+      "Bash(wsl -d Ubuntu -e docker compose build web)",
+      "Bash(wsl -d Ubuntu -e docker compose up -d web)",
+      "Bash(wsl -d Ubuntu -e docker compose logs web -n 15)",
+      "Bash(git commit -m 'fix: use nextUrl.origin for absolute URL redirects preserving hostname *)",
+      "Bash(git commit -m 'chore: update local settings *)"
     ]
   }
 }
