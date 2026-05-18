@@ -106,7 +106,7 @@ services:
     environment:
       API_URL: http://b2b-api-1:3001
       NEXTAUTH_URL: ${NEXTAUTH_URL}
-      AUTH_URL: http://b2b-web-1:3000
+      AUTH_URL: http://localhost:3000
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_NEXTAUTH_SECRET: ${AUTH_NEXTAUTH_SECRET}
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
