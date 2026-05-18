@@ -34,14 +34,16 @@ export default auth((req) => {
     const dashboardPath = userRole === 'seller' ? '/seller'
                          : userRole === 'admin' ? '/admin'
                          : '/buyer';
-    return NextResponse.redirect(new URL(dashboardPath, nextUrl));
+    // Use relative redirect to preserve the original hostname (localhost vs b2b-web-1)
+    return NextResponse.redirect(dashboardPath, { status: 307 });
   }
 
   // Redirect unauthenticated users trying to access protected routes to login
   if (!isLoggedIn && !PUBLIC_PATHS.includes(path)) {
     const loginUrl = new URL('/auth/login', nextUrl);
     loginUrl.searchParams.set('callbackUrl', path);
-    return NextResponse.redirect(loginUrl);
+    // Use relative redirect to preserve the original hostname
+    return NextResponse.redirect(loginUrl.pathname + loginUrl.search, { status: 307 });
   }
 
   // Logged-in users can access everything else - no redirects
