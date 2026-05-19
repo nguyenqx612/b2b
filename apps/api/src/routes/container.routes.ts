@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import { prisma } from '@b2b/db';
 import { simulateContainer } from '@b2b/shared';
 import type { ContainerType } from '@b2b/shared';
+import { assertParticipantOrAdmin } from '../lib/po-access.js';
 
 export const containerRouter = Router();
 
@@ -60,6 +61,8 @@ containerRouter.post('/:poId/simulate', authenticate, async (req, res, next) => 
 containerRouter.get('/:poId', authenticate, async (req, res, next) => {
   try {
     const poId = req.params['poId'] as string;
+    await assertParticipantOrAdmin(poId, req.user!.sub, req.user!.role);
+
     const loads = await prisma.containerLoad.findMany({
       where: { poId },
       orderBy: { createdAt: 'desc' },

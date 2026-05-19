@@ -26,6 +26,10 @@ export async function getForBuyer(id: string) {
   return product;
 }
 
+export async function listCategories() {
+  return repo.findActiveCategories();
+}
+
 export async function getForSeller(id: string, sellerId: string) {
   const product = await repo.findByIdForSeller(id, sellerId);
   if (!product) throw Object.assign(new Error('Product not found'), { status: 404 });

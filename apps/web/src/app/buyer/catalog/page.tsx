@@ -19,16 +19,15 @@ export default async function BuyerCatalogPage({ searchParams }: Props) {
   if (params.search)   qs.set('search',   params.search);
   if (params.page)     qs.set('page',      params.page);
 
-  const [{ items, total, page, pageSize }, { items: allItems }] = await Promise.all([
+  const [{ items, total, page, pageSize }, { categories }] = await Promise.all([
     apiClient.get<{ items: ProductBuyerView[]; total: number; page: number; pageSize: number }>(
       `/api/products?${qs}`, token,
     ),
-    apiClient.get<{ items: ProductBuyerView[]; total: number }>(
-      '/api/products?pageSize=200', token,
+    apiClient.get<{ categories: string[] }>(
+      '/api/products/categories', token,
     ),
   ]);
 
-  const categories = [...new Set(allItems.map((p) => p.category))].sort();
   const totalPages  = Math.ceil(total / pageSize);
 
   function href(ov: Record<string, string | undefined>) {

@@ -4,6 +4,7 @@ import { createProductSchema, updateProductSchema, ROLES } from '@b2b/shared';
 import { authenticate } from '../middleware/authenticate.js';
 import { authorize } from '../middleware/authorize.js';
 import * as productService from '../services/product.service.js';
+import { assertProductImageUpload } from '../lib/upload-validation.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -26,6 +27,14 @@ productsRouter.get('/', authenticate, async (req, res, next) => {
       });
       res.json(result);
     }
+  } catch (err) {
+    next(err);
+  }
+});
+
+productsRouter.get('/categories', authenticate, async (_req, res, next) => {
+  try {
+    res.json({ categories: await productService.listCategories() });
   } catch (err) {
     next(err);
   }
@@ -71,6 +80,8 @@ productsRouter.post(
   async (req, res, next) => {
     try {
       if (!req.file) { res.status(400).json({ error: 'No file uploaded' }); return; }
+      assertProductImageUpload(req.file);
+
       const result = await productService.addImage(req.params.id, req.user!.sub, req.file);
       res.status(201).json(result);
     } catch (err) {

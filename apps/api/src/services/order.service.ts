@@ -1,7 +1,7 @@
 import { prisma } from '@b2b/db';
 import * as repo from '../repositories/order.repository.js';
-import { isValidTransition } from '@b2b/shared';
-import type { CreatePOInput, UpdatePOItemsInput, UpdatePOStatusInput, OrderStatus } from '@b2b/shared';
+import { canTransition, isValidTransition } from '@b2b/shared';
+import type { CreatePOInput, UpdatePOItemsInput, UpdatePOStatusInput, OrderStatus, TransitionRole } from '@b2b/shared';
 
 export async function listOrders(userId: string, role: 'buyer' | 'seller' | 'admin') {
   return repo.findAllForUser(userId, role);
@@ -81,7 +81,8 @@ export async function updateItems(poId: string, input: UpdatePOItemsInput, userI
 }
 
 export async function updateStatus(poId: string, input: UpdatePOStatusInput, userId: string, role: string) {
-  const po = await repo.assertParticipant(poId, userId);
+  const po = role === 'admin' ? await repo.findById(poId) : await repo.assertParticipant(poId, userId);
+  if (!po) throw Object.assign(new Error('Order not found'), { status: 404 });
 
   if (!isValidTransition(po.status as OrderStatus, input.status as OrderStatus)) {
     throw Object.assign(
@@ -90,7 +91,14 @@ export async function updateStatus(poId: string, input: UpdatePOStatusInput, use
     );
   }
 
-  return repo.updateStatus(poId, input.status as any, userId, input.changeReason);
+  if (!canTransition(role as TransitionRole, po.status as OrderStatus, input.status as OrderStatus)) {
+    throw Object.assign(
+      new Error(`Role ${role} cannot transition from ${po.status} to ${input.status}`),
+      { status: 403 },
+    );
+  }
+
+  return repo.updateStatus(poId, input.status as OrderStatus, userId, input.changeReason);
 }
 
 export async function getVersions(poId: string, userId: string, role: string) {

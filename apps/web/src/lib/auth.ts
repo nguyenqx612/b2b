@@ -19,7 +19,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           const apiUrl = process.env.API_URL || 'http://b2b-api-1:3001';
-          console.log('[Auth] Attempting login to:', apiUrl);
 
           const res = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
@@ -34,7 +33,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           const { user, token } = await res.json();
-          console.log('[Auth] Login successful for:', user.email);
           return { ...user, accessToken: token };
         } catch (error) {
           console.error('[Auth] authorize() exception:', error);

@@ -11,6 +11,7 @@ import { containerRouter } from './routes/container.routes.js';
 import { documentsRouter } from './routes/documents.routes.js';
 import { costsRouter } from './routes/costs.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
+import { invoicesRouter } from './routes/invoices.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -26,7 +27,10 @@ export function createApp() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
 
+  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
   const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false });
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
   app.use('/api', limiter);
 
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
@@ -38,6 +42,7 @@ export function createApp() {
   app.use('/api/container', containerRouter);
   app.use('/api/documents', documentsRouter);
   app.use('/api/costs', costsRouter);
+  app.use('/api/invoices', invoicesRouter);
   app.use('/api/admin', adminRouter);
 
   app.use(errorHandler);

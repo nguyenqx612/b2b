@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isValidTransition, ORDER_STATUS } from './order-status.js';
+import { canTransition, isValidTransition, ORDER_STATUS } from './order-status.js';
 
 describe('isValidTransition', () => {
   // Valid transitions
@@ -71,5 +71,31 @@ describe('isValidTransition', () => {
   it('ready_to_ship → cancelled is invalid (no cancel from ready_to_ship)', () => {
     // According to STATUS_TRANSITIONS, ready_to_ship only allows 'shipped'
     expect(isValidTransition(ORDER_STATUS.READY_TO_SHIP, ORDER_STATUS.CANCELLED)).toBe(false);
+  });
+});
+
+describe('canTransition', () => {
+  it('allows a buyer to submit a draft order', () => {
+    expect(canTransition('buyer', ORDER_STATUS.DRAFT, ORDER_STATUS.SUBMITTED)).toBe(true);
+  });
+
+  it('rejects buyer acknowledgement even when the status transition is valid', () => {
+    expect(canTransition('buyer', ORDER_STATUS.SUBMITTED, ORDER_STATUS.ACKNOWLEDGED)).toBe(false);
+  });
+
+  it('allows a seller to acknowledge a submitted order', () => {
+    expect(canTransition('seller', ORDER_STATUS.SUBMITTED, ORDER_STATUS.ACKNOWLEDGED)).toBe(true);
+  });
+
+  it('rejects a seller submitting a buyer draft', () => {
+    expect(canTransition('seller', ORDER_STATUS.DRAFT, ORDER_STATUS.SUBMITTED)).toBe(false);
+  });
+
+  it('allows admins to perform any valid transition', () => {
+    expect(canTransition('admin', ORDER_STATUS.READY_TO_SHIP, ORDER_STATUS.SHIPPED)).toBe(true);
+  });
+
+  it('rejects invalid transitions for admins too', () => {
+    expect(canTransition('admin', ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED)).toBe(false);
   });
 });

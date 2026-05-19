@@ -1,5 +1,5 @@
-import { prisma } from '@b2b/db';
-import type { Prisma, OrderStatus } from '@b2b/db';
+import { Prisma, prisma } from '@b2b/db';
+import type { OrderStatus } from '@b2b/db';
 
 const PO_INCLUDE = {
   items: {
@@ -46,36 +46,52 @@ export async function createWithVersion(
   },
   changedBy: string,
 ) {
-  const poNumber = await generatePoNumber();
+  const maxAttempts = 3;
 
-  return prisma.$transaction(async (tx) => {
-    const po = await tx.purchaseOrder.create({
-      data: {
-        poNumber,
-        buyerId: data.buyerId,
-        sellerId: data.sellerId,
-        notes: data.notes,
-        shippingTerms: data.shippingTerms,
-        portOfLoading: data.portOfLoading ?? 'Ho Chi Minh City',
-        portOfDischarge: data.portOfDischarge ?? 'Los Angeles',
-        currentVersion: 1,
-        items: { createMany: { data: data.items } },
-      },
-      include: PO_INCLUDE,
-    });
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const poNumber = await generatePoNumber(tx);
+        const po = await tx.purchaseOrder.create({
+          data: {
+            poNumber,
+            buyerId: data.buyerId,
+            sellerId: data.sellerId,
+            notes: data.notes,
+            shippingTerms: data.shippingTerms,
+            portOfLoading: data.portOfLoading ?? 'Ho Chi Minh City',
+            portOfDischarge: data.portOfDischarge ?? 'Los Angeles',
+            currentVersion: 1,
+            items: { createMany: { data: data.items } },
+          },
+          include: PO_INCLUDE,
+        });
 
-    await tx.pOVersion.create({
-      data: {
-        poId: po.id,
-        versionNumber: 1,
-        changedBy,
-        changeReason: 'Initial PO creation',
-        snapshot: po as unknown as Prisma.InputJsonValue,
-      },
-    });
+        await tx.pOVersion.create({
+          data: {
+            poId: po.id,
+            versionNumber: 1,
+            changedBy,
+            changeReason: 'Initial PO creation',
+            snapshot: po as unknown as Prisma.InputJsonValue,
+          },
+        });
 
-    return po;
-  });
+        return po;
+      });
+    } catch (err) {
+      if (
+        attempt < maxAttempts &&
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw Object.assign(new Error('Unable to generate purchase order number'), { status: 409 });
 }
 
 export async function updateItemsWithVersion(
@@ -138,10 +154,13 @@ export async function findVersions(poId: string) {
   });
 }
 
-async function generatePoNumber(): Promise<string> {
+async function generatePoNumber(tx: Prisma.TransactionClient): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await prisma.purchaseOrder.count({
+  const latest = await tx.purchaseOrder.findFirst({
     where: { poNumber: { startsWith: `PO-${year}-` } },
+    orderBy: { poNumber: 'desc' },
+    select: { poNumber: true },
   });
-  return `PO-${year}-${String(count + 1).padStart(4, '0')}`;
+  const latestSequence = Number(latest?.poNumber.split('-').at(-1) ?? 0);
+  return `PO-${year}-${String(latestSequence + 1).padStart(4, '0')}`;
 }

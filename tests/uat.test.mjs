@@ -33,6 +33,19 @@ async function req(method, path, body, token) {
   return { status: res.status, json };
 }
 
+async function assertApiAvailable() {
+  try {
+    const res = await fetch(`${BASE}/health`);
+    if (!res.ok) throw new Error(`health returned ${res.status}`);
+  } catch (err) {
+    console.error(`UAT tests require a running API at ${BASE}. Start the Docker stack before running npm run test:uat.`);
+    console.error(err);
+    process.exit(1);
+  }
+}
+
+await assertApiAvailable();
+
 // ─── JOURNEY 1: Seller onboarding and catalog ─────────────────────────────────
 console.log('\n══ Journey 1: Seller onboarding and catalog ══');
 

@@ -28,7 +28,9 @@ async function uploadFile(opts: {
   filename?: string;
 }): Promise<string> {
   const ext = opts.mimetype.split('/')[1] ?? 'bin';
-  const key = `${opts.folder}/${opts.filename ?? randomUUID()}.${ext}`;
+  const rawFilename = opts.filename ? path.basename(opts.filename) : `${randomUUID()}.${ext}`;
+  const filename = path.extname(rawFilename) ? rawFilename : `${rawFilename}.${ext}`;
+  const key = `${opts.folder}/${filename}`;
 
   await client.send(
     new PutObjectCommand({

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { loginSchema } from './schemas/auth.schema.js';
 import { createPOSchema } from './schemas/order.schema.js';
+import { updateProductSchema } from './schemas/product.schema.js';
 
 describe('loginSchema', () => {
   it('valid email + password passes', () => {
@@ -110,5 +111,21 @@ describe('createPOSchema', () => {
       ],
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe('updateProductSchema', () => {
+  it('rejects updates where minimum price exceeds maximum price', () => {
+    const result = updateProductSchema.safeParse({
+      priceRangeMin: 5000,
+      priceRangeMax: 4000,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('allows partial price range updates when only one bound is supplied', () => {
+    expect(updateProductSchema.safeParse({ priceRangeMin: 5000 }).success).toBe(true);
+    expect(updateProductSchema.safeParse({ priceRangeMax: 6000 }).success).toBe(true);
   });
 });

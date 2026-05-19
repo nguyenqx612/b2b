@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import { authorize } from '../middleware/authorize.js';
 import { ROLES } from '@b2b/shared';
 import { prisma } from '@b2b/db';
+import { logAudit } from '../services/audit.service.js';
 
 export const adminRouter = Router();
 adminRouter.use(authenticate, authorize(ROLES.ADMIN));
@@ -29,6 +30,14 @@ adminRouter.patch('/users/:id', async (req, res, next) => {
       where: { id: req.params.id },
       data: { isActive },
       select: { id: true, email: true, role: true, isActive: true },
+    });
+    await logAudit({
+      actorId: req.user!.sub,
+      action: user.isActive ? 'user.reactivated' : 'user.deactivated',
+      entityType: 'user',
+      entityId: user.id,
+      metadata: { targetRole: user.role },
+      req,
     });
     res.json(user);
   } catch (err) {

@@ -3,25 +3,37 @@ import multer from 'multer';
 import { authenticate } from '../middleware/authenticate.js';
 import { prisma } from '@b2b/db';
 import { s3Service } from '../services/s3.service.js';
+import { assertParticipantOrAdmin, assertS3KeyAccess } from '../lib/po-access.js';
+import { assertMessageAttachmentUpload } from '../lib/upload-validation.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 export const messagesRouter = Router();
+
+// Get signed URL for downloading a file
+messagesRouter.get('/s3-signed-url', authenticate, async (req, res, next) => {
+  try {
+    const { key } = req.query;
+    if (typeof key !== 'string' || !key) {
+      res.status(400).json({ error: 'key parameter required' });
+      return;
+    }
+
+    await assertS3KeyAccess(key, req.user!.sub, req.user!.role);
+
+    const url = await s3Service.getSignedUrl(key);
+    res.json({ url });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Get message history for a PO
 messagesRouter.get('/:poId', authenticate, async (req, res, next) => {
   try {
     const { poId } = req.params;
 
-    // Verify participant
-    const po = await prisma.purchaseOrder.findFirst({
-      where: { id: poId, OR: [{ buyerId: req.user!.sub }, { sellerId: req.user!.sub }] },
-      select: { id: true },
-    });
-    if (!po && req.user!.role !== 'admin') {
-      res.status(403).json({ error: 'Access denied' });
-      return;
-    }
+    await assertParticipantOrAdmin(poId, req.user!.sub, req.user!.role);
 
     const messages = await prisma.message.findMany({
       where: { poId },
@@ -44,12 +56,9 @@ messagesRouter.post(
     try {
       const { poId } = req.params;
       if (!req.file) { res.status(400).json({ error: 'No file provided' }); return; }
+      assertMessageAttachmentUpload(req.file);
 
-      const po = await prisma.purchaseOrder.findFirst({
-        where: { id: poId, OR: [{ buyerId: req.user!.sub }, { sellerId: req.user!.sub }] },
-        select: { id: true },
-      });
-      if (!po) { res.status(403).json({ error: 'Access denied' }); return; }
+      await assertParticipantOrAdmin(poId, req.user!.sub, req.user!.role);
 
       const key = await s3Service.uploadFile({
         buffer: req.file.buffer,
@@ -77,19 +86,3 @@ messagesRouter.post(
     }
   },
 );
-
-// Get signed URL for downloading a file
-messagesRouter.get('/s3-signed-url', authenticate, async (req, res, next) => {
-  try {
-    const { key } = req.query;
-    if (typeof key !== 'string' || !key) {
-      res.status(400).json({ error: 'key parameter required' });
-      return;
-    }
-
-    const url = await s3Service.getSignedUrl(key);
-    res.json({ url });
-  } catch (err) {
-    next(err);
-  }
-});

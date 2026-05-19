@@ -58,6 +58,17 @@ export async function findAllForBuyer(options: {
   return { items, total, page, pageSize };
 }
 
+export async function findActiveCategories() {
+  const rows = await prisma.product.findMany({
+    where: { isActive: true },
+    select: { category: true },
+    distinct: ['category'],
+    orderBy: { category: 'asc' },
+  });
+
+  return rows.map((row) => row.category);
+}
+
 export async function findAllForSeller(sellerId: string, options: {
   category?: string;
   search?: string;

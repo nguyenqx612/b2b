@@ -3,6 +3,7 @@ import { createPOSchema, updatePOItemsSchema, updatePOStatusSchema, ROLES } from
 import { authenticate } from '../middleware/authenticate.js';
 import { authorize } from '../middleware/authorize.js';
 import * as orderService from '../services/order.service.js';
+import { logAudit } from '../services/audit.service.js';
 
 export const ordersRouter = Router();
 
@@ -28,6 +29,14 @@ ordersRouter.post('/', authenticate, authorize(ROLES.BUYER), async (req, res, ne
   try {
     const input = createPOSchema.parse(req.body);
     const order = await orderService.createOrder(input, req.user!.sub);
+    await logAudit({
+      actorId: req.user!.sub,
+      action: 'po.created',
+      entityType: 'purchase_order',
+      entityId: order.id,
+      metadata: { poNumber: order.poNumber },
+      req,
+    });
     res.status(201).json(order);
   } catch (err) {
     next(err);
@@ -38,6 +47,14 @@ ordersRouter.patch('/:id/items', authenticate, async (req, res, next) => {
   try {
     const input = updatePOItemsSchema.parse(req.body);
     const order = await orderService.updateItems(req.params.id, input, req.user!.sub);
+    await logAudit({
+      actorId: req.user!.sub,
+      action: 'po.items_updated',
+      entityType: 'purchase_order',
+      entityId: order.id,
+      metadata: { version: order.currentVersion },
+      req,
+    });
     res.json(order);
   } catch (err) {
     next(err);
@@ -48,6 +65,14 @@ ordersRouter.patch('/:id/status', authenticate, async (req, res, next) => {
   try {
     const input = updatePOStatusSchema.parse(req.body);
     const order = await orderService.updateStatus(req.params.id, input, req.user!.sub, req.user!.role);
+    await logAudit({
+      actorId: req.user!.sub,
+      action: 'po.status_changed',
+      entityType: 'purchase_order',
+      entityId: order.id,
+      metadata: { status: order.status, version: order.currentVersion },
+      req,
+    });
     res.json(order);
   } catch (err) {
     next(err);

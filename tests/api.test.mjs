@@ -33,11 +33,24 @@ async function req(method, path, body, token) {
   return { status: res.status, json };
 }
 
+async function assertApiAvailable() {
+  try {
+    const res = await fetch(`${BASE}/health`);
+    if (!res.ok) throw new Error(`health returned ${res.status}`);
+  } catch (err) {
+    console.error(`API integration tests require a running API at ${BASE}. Start the Docker stack before running npm run test:api.`);
+    console.error(err);
+    process.exit(1);
+  }
+}
+
+await assertApiAvailable();
+
 // State shared across tests
-let sellerToken, buyerToken, thirdPartyToken;
-let sellerId, buyerId;
-let productId, productId2;
-let orderId;
+let sellerToken, buyerToken, thirdPartyToken, otherSellerToken;
+let sellerId, buyerId, otherSellerId;
+let productId, productId2, otherSellerProductId;
+let orderId, otherSellerOrderId;
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 console.log('\nAUTH');
@@ -85,6 +98,23 @@ console.log('\nAUTH');
   if (r.status === 201) thirdPartyToken = r.json.token;
 }
 
+// Second seller for cross-seller authorization tests
+{
+  const r = await req('POST', '/api/auth/register', {
+    email: `seller2-${ts}@test.com`,
+    password: 'password123',
+    role: 'seller',
+    companyName: 'Other Seller Co',
+  });
+  if (r.status === 201 && r.json?.token && r.json?.user?.id) {
+    otherSellerToken = r.json.token;
+    otherSellerId = r.json.user.id;
+    pass('POST /api/auth/register → second seller account (201)');
+  } else {
+    fail('POST /api/auth/register → second seller account (201)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
 {
   const r = await req('POST', '/api/auth/register', {
     email: `seller${ts}@test.com`,
@@ -92,12 +122,8 @@ console.log('\nAUTH');
     role: 'seller',
     companyName: 'Test Seller Co',
   });
-  // NOTE: API bug — errorHandler ignores .status property on thrown errors.
-  // auth.service throws { status: 409 } but errorHandler always sends 500.
   if (r.status === 409) {
     pass('POST /api/auth/register → duplicate email (409)');
-  } else if (r.status === 500 && r.json?.error?.includes('already registered')) {
-    pass('POST /api/auth/register → duplicate email correctly rejected (BUG: returns 500 instead of 409 — error handler ignores .status)');
   } else {
     fail('POST /api/auth/register → duplicate email (409)', `got ${r.status}: ${JSON.stringify(r.json)}`);
   }
@@ -120,12 +146,8 @@ console.log('\nAUTH');
     email: `seller${ts}@test.com`,
     password: 'wrongpassword',
   });
-  // NOTE: API bug — errorHandler ignores .status property.
-  // auth.service throws { status: 401 } but errorHandler always sends 500.
   if (r.status === 401) {
     pass('POST /api/auth/login → wrong password (401)');
-  } else if (r.status === 500 && r.json?.error?.includes('Invalid credentials')) {
-    pass('POST /api/auth/login → wrong password correctly rejected (BUG: returns 500 instead of 401 — error handler ignores .status)');
   } else {
     fail('POST /api/auth/login → wrong password (401)', `got ${r.status}: ${JSON.stringify(r.json)}`);
   }
@@ -181,6 +203,29 @@ console.log('\nPRODUCTS (as seller)');
     originCountry: 'VN',
   }, sellerToken);
   if (r.status === 201) productId2 = r.json.id;
+}
+
+// Create product owned by the second seller for cross-seller authorization tests
+{
+  const r = await req('POST', '/api/products', {
+    sku: `SKU-OTHER-${ts}`,
+    name: 'Other Seller Product',
+    category: 'Electronics',
+    unit: 'pcs',
+    priceUsdCents: 7000,
+    priceRangeMin: 6500,
+    priceRangeMax: 7500,
+    cbmPerUnit: 0.7,
+    weightKg: 2.0,
+    hsCode: '8471.41',
+    originCountry: 'VN',
+  }, otherSellerToken);
+  if (r.status === 201 && r.json?.id) {
+    otherSellerProductId = r.json.id;
+    pass('POST /api/products → second seller creates product (201)');
+  } else {
+    fail('POST /api/products → second seller creates product (201)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
 }
 
 {
@@ -258,6 +303,20 @@ console.log('\nORDERS');
 }
 
 {
+  const r = await req('POST', '/api/orders', {
+    sellerId: otherSellerId,
+    items: [{ productId: otherSellerProductId, quantity: 3 }],
+    notes: 'PO for second seller',
+  }, buyerToken);
+  if (r.status === 201 && r.json?.id) {
+    otherSellerOrderId = r.json.id;
+    pass('POST /api/orders → buyer creates PO with second seller product (201)');
+  } else {
+    fail('POST /api/orders → buyer creates PO with second seller product (201)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+{
   const r = await req('GET', '/api/orders', null, buyerToken);
   if (r.status === 200) {
     const orders = Array.isArray(r.json) ? r.json : [];
@@ -310,6 +369,18 @@ console.log('\nORDERS');
   }
 }
 
+{
+  const r = await req('PATCH', `/api/orders/${orderId}/status`, {
+    status: 'acknowledged',
+    changeReason: 'Buyer attempts seller-only transition',
+  }, buyerToken);
+  if (r.status === 403) {
+    pass("PATCH /api/orders/:id/status → buyer cannot advance to 'acknowledged' (403)");
+  } else {
+    fail("PATCH /api/orders/:id/status → buyer cannot advance to 'acknowledged' (403)", `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
 // Step 2: Seller advances submitted → acknowledged
 {
   const r = await req('PATCH', `/api/orders/${orderId}/status`, {
@@ -343,14 +414,8 @@ console.log('\nORDERS');
   const r = await req('PATCH', `/api/orders/${orderId}/status`, {
     status: 'shipped',
   }, sellerToken);
-  // NOTE: API bug — errorHandler ignores .status property and returns 500 instead of 422
-  // We accept 422, 400, or 500 (bug) here
-  if (r.status === 422 || r.status === 400 || r.status === 500) {
-    if (r.status === 500) {
-      pass('PATCH /api/orders/:id/status → invalid transition rejected (BUG: returns 500 instead of 422 — error handler ignores .status)');
-    } else {
-      pass('PATCH /api/orders/:id/status → invalid transition (422)');
-    }
+  if (r.status === 422) {
+    pass('PATCH /api/orders/:id/status → invalid transition (422)');
   } else {
     fail('PATCH /api/orders/:id/status → invalid transition rejected', `got ${r.status}: ${JSON.stringify(r.json)}`);
   }
@@ -361,14 +426,29 @@ console.log('\nAUTHORIZATION');
 
 {
   const r = await req('GET', `/api/orders/${orderId}`, null, thirdPartyToken);
-  // NOTE: API bug — errorHandler ignores .status property, returns 500 instead of 404
-  // The service correctly throws { status: 404 } but it gets swallowed
   if (r.status === 404 || r.status === 403) {
     pass('GET /api/orders/:id → third-party JWT (404 or 403)');
-  } else if (r.status === 500 && r.json?.error?.includes('not found')) {
-    pass('GET /api/orders/:id → third-party correctly denied (BUG: returns 500 instead of 404 — error handler ignores .status)');
   } else {
     fail('GET /api/orders/:id → third-party JWT (404 or 403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+{
+  const r = await req('GET', `/api/documents/${orderId}`, null, thirdPartyToken);
+  if (r.status === 404 || r.status === 403) {
+    pass('GET /api/documents/:poId → third-party denied (404 or 403)');
+  } else {
+    fail('GET /api/documents/:poId → third-party denied (404 or 403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+{
+  const key = encodeURIComponent(`documents/${orderId}/fake.pdf`);
+  const r = await req('GET', `/api/messages/s3-signed-url?key=${key}`, null, thirdPartyToken);
+  if (r.status === 404 || r.status === 403) {
+    pass('GET /api/messages/s3-signed-url → third-party denied for PO-scoped key (404 or 403)');
+  } else {
+    fail('GET /api/messages/s3-signed-url → third-party denied for PO-scoped key (404 or 403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
   }
 }
 
@@ -401,8 +481,34 @@ console.log('\nCONTAINER SIM');
   }
 }
 
+{
+  const r = await req('GET', `/api/container/${orderId}`, null, thirdPartyToken);
+  if (r.status === 404 || r.status === 403) {
+    pass('GET /api/container/:poId → third-party denied (404 or 403)');
+  } else {
+    fail('GET /api/container/:poId → third-party denied (404 or 403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
 // ─── COSTS ────────────────────────────────────────────────────────────────────
 console.log('\nCOSTS');
+
+{
+  const r = await req('POST', `/api/costs/${otherSellerOrderId}`, {
+    goodsFobCents: 10000,
+    freightCents: 1000,
+    insuranceCents: 100,
+    customsDutyCents: 500,
+    portHandlingCents: 200,
+    otherCents: 0,
+    currency: 'USD',
+  }, sellerToken);
+  if (r.status === 403) {
+    pass('POST /api/costs/:poId → unrelated seller denied (403)');
+  } else {
+    fail('POST /api/costs/:poId → unrelated seller denied (403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
 
 {
   const r = await req('POST', `/api/costs/${orderId}`, {
@@ -428,6 +534,29 @@ console.log('\nCOSTS');
     pass('GET /api/costs/:poId → buyer can read cost breakdown');
   } else {
     fail('GET /api/costs/:poId → buyer can read cost breakdown', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+{
+  const r = await req('GET', `/api/costs/${orderId}`, null, thirdPartyToken);
+  if (r.status === 404 || r.status === 403) {
+    pass('GET /api/costs/:poId → third-party denied (404 or 403)');
+  } else {
+    fail('GET /api/costs/:poId → third-party denied (404 or 403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+// ─── DOCUMENTS ────────────────────────────────────────────────────────────────
+console.log('\nDOCUMENTS');
+
+{
+  const r = await req('POST', `/api/documents/${otherSellerOrderId}/generate`, {
+    docType: 'commercial_invoice',
+  }, sellerToken);
+  if (r.status === 403) {
+    pass('POST /api/documents/:poId/generate → unrelated seller denied (403)');
+  } else {
+    fail('POST /api/documents/:poId/generate → unrelated seller denied (403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
   }
 }
 

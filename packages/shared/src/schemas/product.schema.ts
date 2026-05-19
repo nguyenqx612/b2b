@@ -21,7 +21,10 @@ export const createProductSchema = productBase.refine(
 );
 
 // partial() works on the base object (not the refined version)
-export const updateProductSchema = productBase.partial();
+export const updateProductSchema = productBase.partial().refine(
+  (d) => d.priceRangeMin === undefined || d.priceRangeMax === undefined || d.priceRangeMin <= d.priceRangeMax,
+  { message: 'priceRangeMin must be ≤ priceRangeMax', path: ['priceRangeMin'] },
+);
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

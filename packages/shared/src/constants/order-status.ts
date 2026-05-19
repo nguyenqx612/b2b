@@ -11,6 +11,7 @@ export const ORDER_STATUS = {
 } as const;
 
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
+export type TransitionRole = 'buyer' | 'seller' | 'admin';
 
 // Valid transitions: key → allowed next states
 export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -27,4 +28,28 @@ export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
   return STATUS_TRANSITIONS[from].includes(to);
+}
+
+const ROLE_TRANSITIONS: Record<Exclude<TransitionRole, 'admin'>, Partial<Record<OrderStatus, OrderStatus[]>>> = {
+  buyer: {
+    draft: ['submitted', 'cancelled'],
+    submitted: ['cancelled'],
+    acknowledged: ['cancelled'],
+    confirmed: ['cancelled'],
+    in_production: ['cancelled'],
+  },
+  seller: {
+    submitted: ['acknowledged', 'cancelled'],
+    acknowledged: ['confirmed', 'cancelled'],
+    confirmed: ['in_production', 'cancelled'],
+    in_production: ['ready_to_ship', 'cancelled'],
+    ready_to_ship: ['shipped'],
+    shipped: ['delivered'],
+  },
+};
+
+export function canTransition(role: TransitionRole, from: OrderStatus, to: OrderStatus): boolean {
+  if (!isValidTransition(from, to)) return false;
+  if (role === 'admin') return true;
+  return ROLE_TRANSITIONS[role][from]?.includes(to) ?? false;
 }
