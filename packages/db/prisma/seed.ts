@@ -148,6 +148,8 @@ async function main() {
   const tamlong = await prisma.user.upsert({
     where: { email: 'tamlongcraft@gmail.com' },
     update: {
+      passwordHash,
+      role: 'seller',
       companyName: 'Tam Long Craft',
       isActive: true,
     },
@@ -158,6 +160,23 @@ async function main() {
       companyName: 'Tam Long Craft',
       companyAddress: 'Vietnam',
       taxId: 'VN-TAMLONG',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'thewynliving@gmail.com' },
+    update: {
+      passwordHash,
+      role: 'buyer',
+      companyName: 'The Wyn Living',
+      isActive: true,
+    },
+    create: {
+      email: 'thewynliving@gmail.com',
+      passwordHash,
+      role: 'buyer',
+      companyName: 'The Wyn Living',
+      companyAddress: 'USA',
     },
   });
 
@@ -213,7 +232,8 @@ async function main() {
   console.log(`  Admin:  admin@b2b.local / ${PASSWORD}`);
   console.log(`  Seller: seller@b2b.local / ${PASSWORD}`);
   console.log(`  Buyer:  buyer@b2b.local / ${PASSWORD}`);
-  console.log(`  Tam Long Craft: tamlongcraft@gmail.com / ${PASSWORD} (${tamlongImported} products)`);
+  console.log(`  Tam Long Craft seller: tamlongcraft@gmail.com / ${PASSWORD} (${tamlongImported} products)`);
+  console.log(`  The Wyn Living buyer: thewynliving@gmail.com / ${PASSWORD}`);
   if (tamlongSkipped.length) {
     console.log(`  Skipped ${tamlongSkipped.length} Excel rows (missing FOB/CBM): ${tamlongSkipped.join(', ')}`);
   }

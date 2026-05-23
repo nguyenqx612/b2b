@@ -44,13 +44,14 @@ function setEnv(key, value) {
 
 if (codespaceName) {
   const webUrl = `https://${codespaceName}-3000.${domain}`;
-  const apiUrl = `https://${codespaceName}-3001.${domain}`;
+  const apiPublicUrl = `https://${codespaceName}-3001.${domain}`;
   setEnv('NEXTAUTH_URL', webUrl);
   setEnv('AUTH_URL', webUrl);
-  setEnv('NEXT_PUBLIC_API_URL', apiUrl);
-  setEnv('NEXT_PUBLIC_WS_URL', apiUrl);
+  setEnv('NEXT_PUBLIC_API_URL', apiPublicUrl);
+  setEnv('NEXT_PUBLIC_WS_URL', apiPublicUrl);
+  setEnv('API_URL', 'http://localhost:3001');
   setEnv('AUTH_TRUST_HOST', 'true');
-  console.log(`Codespaces URLs: web=${webUrl} api=${apiUrl}`);
+  console.log(`Codespaces URLs: web=${webUrl} api=${apiPublicUrl} (server API_URL=http://localhost:3001)`);
 } else {
   console.log('Local devcontainer — .env URLs unchanged');
 }
