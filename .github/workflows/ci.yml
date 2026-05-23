@@ -92,10 +92,14 @@ jobs:
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio server /data
-          sleep 5
+            minio/minio server /data --console-address ":9001"
+          echo "Waiting for MinIO..."
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:9000/minio/health/live && break
+            sleep 2
+          done
           docker run --rm --network host minio/mc \
-            alias set local http://localhost:9000 minioadmin minioadmin
+            alias set local http://127.0.0.1:9000 minioadmin minioadmin
           docker run --rm --network host minio/mc \
             mb --ignore-existing local/b2b-dev
       - name: Start API

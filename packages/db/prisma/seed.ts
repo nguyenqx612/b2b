@@ -27,7 +27,7 @@ interface TamlongProduct {
 async function main() {
   const passwordHash = await bcrypt.hash(PASSWORD, SALT_ROUNDS);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@b2b.local' },
     update: {},
     create: {

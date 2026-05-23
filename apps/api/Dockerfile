@@ -28,8 +28,9 @@ COPY apps/api/ ./apps/api/
 # Generate Prisma client
 RUN npm run generate --workspace=packages/db
 
-# Build shared + api
+# Build shared + db
 RUN npm run build --workspace=packages/shared
+RUN npm run build --workspace=packages/db
 RUN npm run build --workspace=apps/api
 
 # ── Runtime stage ─────────────────────────────────────────────

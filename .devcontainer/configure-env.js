@@ -16,8 +16,6 @@ if (!fs.existsSync(envPath)) {
   process.exit(0);
 }
 
-const os = require('os');
-
 function detectCodespaceName() {
   if (process.env.CODESPACE_NAME) return process.env.CODESPACE_NAME;
   const nameFile = path.join(__dirname, '.codespace-name');

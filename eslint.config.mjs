@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/tsconfig.tsbuildinfo',
       '**/coverage/**',
       '**/next-env.d.ts',
+      '.devcontainer/**',
     ],
   },
   js.configs.recommended,
@@ -42,7 +43,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.{js,mjs}', 'tests/**/*.{js,mjs,ts}', '**/*.config.{js,mjs,ts}'],
+    files: ['**/scripts/**/*.{js,mjs}', 'tests/**/*.{js,mjs,ts}', '**/*.config.{js,mjs,ts}'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-unused-vars': 'off',

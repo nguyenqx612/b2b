@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const xlsxPath = join(__dirname, '../data/final-product-list.xlsx');
 const outPath = join(__dirname, '../data/tamlong-products.json');
 
-function buildName(sku, note, pkgNote, itemDim) {
+function buildName(sku, note, pkgNote) {
   const parts = [sku];
   if (note) parts.push(String(note).trim());
   else if (pkgNote) parts.push(String(pkgNote).trim());
@@ -61,7 +61,7 @@ for (let i = 1; i < rows.length; i++) {
 
   products.push({
     sku: String(sku).trim(),
-    name: buildName(sku, note, pkgNote, itemDim),
+    name: buildName(sku, note, pkgNote),
     description: buildDescription(note, pkgNote, itemDim),
     category: 'Furniture & Craft',
     unit: 'pcs',
