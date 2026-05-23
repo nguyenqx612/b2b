@@ -13,13 +13,15 @@ Hybrid dev: Docker runs **Postgres, Redis, and MinIO**; API and web run on the h
 
 ## Daily use
 
-After the Codespace starts (`post-start.sh` restarts infra):
+After the Codespace starts, `post-start.sh` restarts infra and **`start-dev.sh` runs `npm run dev` automatically**.
+
+If the app is not up:
 
 ```bash
-npm run dev
+bash .devcontainer/start-dev.sh
 ```
 
-Open the **Ports** tab and set **3000** (web) and **3001** (API) to **Public**.
+Open the **Ports** tab — port **3000** (web) is set to **Public** and should open in your browser.
 
 | Port | Service        |
 |------|----------------|

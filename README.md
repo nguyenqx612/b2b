@@ -40,13 +40,7 @@ npm run dev                    # API :3001 + Web :3000
 
 No local Docker Desktop required. Open the repo on GitHub → **Code** → **Codespaces** → **Create codespace on main**.
 
-Setup runs automatically (infra, migrate, seed). Then:
-
-```bash
-npm run dev
-```
-
-Set ports **3000** (web) and **3001** (API) to **Public** in the Ports tab. See [`.devcontainer/README.md`](.devcontainer/README.md) for details.
+Setup runs automatically (infra, migrate, seed, **npm run dev**). Open port **3000** in the Ports tab if the browser does not open automatically.
 
 Stop the Codespace when done to save free core-hours (~120/month on GitHub Free).
 
