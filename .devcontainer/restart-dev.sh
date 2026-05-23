@@ -29,3 +29,7 @@ curl -sf -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"tamlongcraft@gmail.com","password":"password123"}' | head -c 200
 echo ""
+
+echo "Testing web NextAuth login..."
+node .devcontainer/test-web-login.mjs thewynliving@gmail.com password123
+node .devcontainer/test-web-login.mjs tamlongcraft@gmail.com password123

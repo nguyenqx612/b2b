@@ -56,3 +56,23 @@ if (codespaceName) {
 }
 
 fs.writeFileSync(envPath, content);
+
+// Next.js reads env from apps/web — mirror server-side auth vars from root .env.
+const webEnvPath = path.join(root, 'apps/web/.env.local');
+const keysForWeb = [
+  'API_URL',
+  'AUTH_SECRET',
+  'AUTH_URL',
+  'NEXTAUTH_URL',
+  'NEXT_PUBLIC_API_URL',
+  'NEXT_PUBLIC_WS_URL',
+  'AUTH_TRUST_HOST',
+];
+const webLines = keysForWeb
+  .map((key) => {
+    const match = content.match(new RegExp(`^${key}=(.*)$`, 'm'));
+    return match ? `${key}=${match[1]}` : null;
+  })
+  .filter(Boolean);
+fs.writeFileSync(webEnvPath, `${webLines.join('\n')}\n`);
+console.log(`Synced ${webLines.length} vars to apps/web/.env.local`);

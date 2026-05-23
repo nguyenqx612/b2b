@@ -4,6 +4,7 @@ import type { JWT } from 'next-auth/jwt';
 import { loginSchema } from '@b2b/shared';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   trustHost: true,
   providers: [
     Credentials({
@@ -19,7 +20,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null;
           }
 
-          const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+          // Server-side auth must call the local API — never the public Codespaces URL.
+          const apiUrl = process.env.API_URL ?? 'http://localhost:3001';
 
           const res = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
