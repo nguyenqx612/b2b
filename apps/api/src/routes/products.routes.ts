@@ -13,7 +13,7 @@ export const productsRouter = Router();
 // Buyer: browse all active products (price range only)
 productsRouter.get('/', authenticate, async (req, res, next) => {
   try {
-    const { category, search, page, pageSize } = req.query as Record<string, string>;
+    const { category, search, sellerId, page, pageSize } = req.query as Record<string, string>;
     const parsedPage = Math.max(1, Number(page) || 1);
     const parsedPageSize = Math.min(100, Math.max(1, Number(pageSize) || 20));
     if (req.user!.role === ROLES.SELLER) {
@@ -23,7 +23,7 @@ productsRouter.get('/', authenticate, async (req, res, next) => {
       res.json(result);
     } else {
       const result = await productService.listForBuyer({
-        category, search, page: parsedPage, pageSize: parsedPageSize,
+        category, search, sellerId, page: parsedPage, pageSize: parsedPageSize,
       });
       res.json(result);
     }

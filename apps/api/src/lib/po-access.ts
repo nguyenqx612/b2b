@@ -63,7 +63,13 @@ export async function assertS3KeyAccess(key: string, userId: string, role: Role)
   }
 
   if (prefix === 'products') {
-    return;
+    const product = await prisma.product.findUnique({
+      where: { id: resourceId },
+      select: { sellerId: true, isActive: true },
+    });
+    if (!product?.isActive) throw forbidden('Product not found');
+    if (role === ROLES.ADMIN || product.sellerId === userId) return;
+    throw forbidden('Access denied to product image');
   }
 
   throw forbidden();

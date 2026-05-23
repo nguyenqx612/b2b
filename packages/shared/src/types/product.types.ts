@@ -1,8 +1,12 @@
 // Buyer-safe product view — never includes priceUsdCents
+export interface ProductSellerInfo {
+  companyName: string | null;
+}
+
 export interface ProductBuyerView {
   id: string;
   sellerId: string;
-  sellerCompany: string;
+  seller: ProductSellerInfo;
   sku: string;
   name: string;
   description: string | null;
@@ -22,4 +26,5 @@ export interface ProductBuyerView {
 export interface ProductSellerView extends ProductBuyerView {
   priceUsdCents: number; // cents — seller only
   weightKg: number | null;
+  updatedAt?: string;
 }

@@ -31,6 +31,17 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/web/**/*.{ts,tsx}', 'apps/api/**/*.{ts,tsx}'],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
     files: ['scripts/**/*.{js,mjs}', 'tests/**/*.{js,mjs,ts}', '**/*.config.{js,mjs,ts}'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',

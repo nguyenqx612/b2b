@@ -46,7 +46,7 @@ ordersRouter.post('/', authenticate, authorize(ROLES.BUYER), async (req, res, ne
 ordersRouter.patch('/:id/items', authenticate, async (req, res, next) => {
   try {
     const input = updatePOItemsSchema.parse(req.body);
-    const order = await orderService.updateItems(req.params.id, input, req.user!.sub);
+    const order = await orderService.updateItems(req.params.id, input, req.user!.sub, req.user!.role);
     await logAudit({
       actorId: req.user!.sub,
       action: 'po.items_updated',

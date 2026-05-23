@@ -18,8 +18,8 @@ export function POLineItems({ items }: { items: POItem[] }) {
           {items.map((item) => (
             <tr key={item.id}>
               <td className="py-2">
-                <div className="font-medium">{item.productName}</div>
-                <div className="text-xs text-gray-500">{item.productSku}</div>
+                <div className="font-medium">{item.product.name}</div>
+                <div className="text-xs text-gray-500">{item.product.sku}</div>
               </td>
               <td className="py-2 text-right">{item.quantity}</td>
               <td className="py-2 text-right text-gray-600">{item.cbmSubtotal.toFixed(3)}</td>

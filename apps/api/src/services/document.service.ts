@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import puppeteer from 'puppeteer';
 import { prisma, Prisma } from '@b2b/db';
 import type { DocType } from '@b2b/db';
 import { s3Service } from './s3.service.js';
@@ -29,23 +28,16 @@ function escapeHtml(value: unknown): string {
 async function renderPDF(templateName: string, data: Record<string, unknown>): Promise<Buffer> {
   let html = await fs.readFile(path.join(TEMPLATES_DIR, `${templateName}.html`), 'utf-8');
 
-  // Simple token replacement: {{key}}
   for (const [key, value] of Object.entries(data)) {
     html = html.replaceAll(`{{${key}}}`, String(value ?? ''));
   }
 
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    headless: true,
-  });
-  try {
-    const page = await browser.newPage();
+  const { withBrowserPage } = await import('./browser-pool.js');
+  return withBrowserPage(async (page) => {
     await page.setContent(html, { waitUntil: 'load' });
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
     return Buffer.from(pdfBuffer);
-  } finally {
-    await browser.close();
-  }
+  });
 }
 
 const TEMPLATE_MAP: Record<DocType, string> = {

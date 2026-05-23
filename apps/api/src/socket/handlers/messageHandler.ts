@@ -4,7 +4,10 @@ import { prisma } from '@b2b/db';
 export function registerMessageHandlers(io: Server, socket: Socket) {
   // Client emits 'join:po' to subscribe to a PO thread
   socket.on('join:po', async (poId: string) => {
-    if (typeof poId !== 'string') return;
+    if (typeof poId !== 'string' || !poId) {
+      socket.emit('error', { message: 'Invalid PO id' });
+      return;
+    }
 
     // Verify the user is a participant in this PO
     const po = await prisma.purchaseOrder.findFirst({
@@ -29,8 +32,14 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
   });
 
   socket.on('message:send', async (data: { poId: string; body: string }) => {
-    if (typeof data.poId !== 'string' || typeof data.body !== 'string') return;
-    if (!socket.rooms.has(`po:${data.poId}`)) return;
+    if (typeof data?.poId !== 'string' || typeof data?.body !== 'string') {
+      socket.emit('error', { message: 'Invalid message payload' });
+      return;
+    }
+    if (!socket.rooms.has(`po:${data.poId}`)) {
+      socket.emit('error', { message: 'Join the PO room before sending messages' });
+      return;
+    }
 
     try {
       const message = await prisma.message.create({

@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -72,14 +72,14 @@ services:
       - "3001:3001"
     env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      S3_ENDPOINT: ${S3_ENDPOINT}
+      # Override localhost URLs from .env with Docker internal hostnames
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_BUCKET: ${S3_BUCKET}
       S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE}
-      JWT_SECRET: ${JWT_SECRET}
       API_JWT_SECRET: ${API_JWT_SECRET}
       NODE_ENV: development
     depends_on:
@@ -100,12 +100,12 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
     ports:
-      - "3000:3000"
+      - "3002:3000"
     env_file: .env
     environment:
-      API_URL: http://b2b-api-1:3001
-      NEXTAUTH_URL: ${NEXTAUTH_URL}
-      AUTH_URL: http://localhost:3000
+      API_URL: http://api:3001
+      NEXTAUTH_URL: http://localhost:3002
+      AUTH_URL: http://localhost:3002
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_NEXTAUTH_SECRET: ${AUTH_NEXTAUTH_SECRET}
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}

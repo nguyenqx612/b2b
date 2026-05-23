@@ -1,20 +1,18 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import { prisma } from '@b2b/db';
-import { simulateContainer } from '@b2b/shared';
-import type { ContainerType } from '@b2b/shared';
+import type { Prisma } from '@b2b/db';
+import { simulateContainer, containerSimulateSchema } from '@b2b/shared';
 import { assertParticipantOrAdmin } from '../lib/po-access.js';
 
 export const containerRouter = Router();
 
-// Calculate and persist a container simulation for a PO
 containerRouter.post('/:poId/simulate', authenticate, async (req, res, next) => {
   try {
     const poId = req.params['poId'] as string;
-    const containerType = (req.body.containerType ?? '40ft') as ContainerType;
+    const { containerType } = containerSimulateSchema.parse(req.body ?? {});
     const isAdmin = req.user!.role === 'admin';
 
-    // Always include items in the query — check access separately
     const po = await prisma.purchaseOrder.findUnique({
       where: { id: poId },
       include: {
@@ -24,7 +22,6 @@ containerRouter.post('/:poId/simulate', authenticate, async (req, res, next) => 
 
     if (!po) { res.status(404).json({ error: 'PO not found' }); return; }
 
-    // Non-admin must be a participant
     if (!isAdmin && po.buyerId !== req.user!.sub && po.sellerId !== req.user!.sub) {
       res.status(403).json({ error: 'Access denied' }); return;
     }
@@ -47,7 +44,7 @@ containerRouter.post('/:poId/simulate', authenticate, async (req, res, next) => 
         containerCbm: result.containerCBM,
         containersNeeded: result.containersNeeded,
         utilizationPct: result.utilizationPct,
-        itemsSnapshot: result.items as unknown as any,
+        itemsSnapshot: result.items as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -57,7 +54,6 @@ containerRouter.post('/:poId/simulate', authenticate, async (req, res, next) => 
   }
 });
 
-// Get previous simulations for a PO
 containerRouter.get('/:poId', authenticate, async (req, res, next) => {
   try {
     const poId = req.params['poId'] as string;

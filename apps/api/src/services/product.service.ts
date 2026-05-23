@@ -2,10 +2,11 @@ import * as repo from '../repositories/product.repository.js';
 import { s3Service } from './s3.service.js';
 import type { CreateProductInput, UpdateProductInput } from '@b2b/shared';
 
-export async function listForBuyer(query: { category?: string; search?: string; page?: number; pageSize?: number }) {
+export async function listForBuyer(query: { category?: string; search?: string; sellerId?: string; page?: number; pageSize?: number }) {
   return repo.findAllForBuyer({
     category: query.category,
     search: query.search,
+    sellerId: query.sellerId,
     page: query.page ?? 1,
     pageSize: Math.min(query.pageSize ?? 20, 100),
   });
@@ -75,4 +76,29 @@ export async function addImage(id: string, sellerId: string, file: Express.Multe
 
 export async function remove(id: string, sellerId: string) {
   await repo.softDelete(id, sellerId);
+}
+
+const PRODUCT_IMAGE_KEY = /^products\/([0-9a-f-]{36})\//i;
+
+export async function getPublicImageUrl(key: string) {
+  if (key.startsWith('/') || key.includes('..') || key.includes('\\')) {
+    throw Object.assign(new Error('Invalid image key'), { status: 400 });
+  }
+
+  const match = PRODUCT_IMAGE_KEY.exec(key);
+  if (!match) {
+    throw Object.assign(new Error('Invalid image key'), { status: 400 });
+  }
+
+  const productId = match[1];
+  const product = await repo.findByIdForBuyer(productId);
+  if (!product) {
+    throw Object.assign(new Error('Product not found'), { status: 404 });
+  }
+
+  if (!product.images.includes(key)) {
+    throw Object.assign(new Error('Image not found for product'), { status: 404 });
+  }
+
+  return s3Service.getSignedUrl(key);
 }

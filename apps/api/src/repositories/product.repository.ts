@@ -32,12 +32,14 @@ const SELLER_SELECT = {
 export async function findAllForBuyer(options: {
   category?: string;
   search?: string;
+  sellerId?: string;
   page: number;
   pageSize: number;
 }) {
-  const { category, search, page, pageSize } = options;
+  const { category, search, sellerId, page, pageSize } = options;
   const where: Prisma.ProductWhereInput = {
     isActive: true,
+    ...(sellerId ? { sellerId } : {}),
     ...(category ? { category } : {}),
     ...(search
       ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] }

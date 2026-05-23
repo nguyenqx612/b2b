@@ -1,12 +1,11 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import type { PurchaseOrder } from '@b2b/shared';
 import { POStatusBadge } from '@/components/orders/POStatusBadge';
 
 export default async function BuyerOrdersPage() {
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
+  const token = await getSessionToken();
   const orders = await apiClient.get<PurchaseOrder[]>('/api/orders', token);
 
   return (
@@ -24,7 +23,7 @@ export default async function BuyerOrdersPage() {
       {orders.length === 0 ? (
         <div className="py-24 text-center text-gray-500">
           <p>No orders yet.</p>
-          <Link href="/buyer/catalog" className="mt-2 inline-block text-[#062423] hover:underline text-sm">
+          <Link href="/catalog" className="mt-2 inline-block text-[#062423] hover:underline text-sm">
             Browse catalog →
           </Link>
         </div>
@@ -45,7 +44,7 @@ export default async function BuyerOrdersPage() {
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-[#A8BEBD]/15">
                   <td className="px-4 py-3 font-mono font-medium">{order.poNumber}</td>
-                  <td className="px-4 py-3 text-gray-700">{(order as any).seller?.companyName ?? (order as any).seller?.email ?? order.sellerId}</td>
+                  <td className="px-4 py-3 text-gray-700">{order.seller?.companyName ?? order.seller?.email ?? order.sellerId}</td>
                   <td className="px-4 py-3 text-gray-600">{order.items.length} item(s)</td>
                   <td className="px-4 py-3">
                     <POStatusBadge status={order.status} />

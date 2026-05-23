@@ -11,6 +11,7 @@ export * from './utils/money.utils.js';
 export * from './schemas/auth.schema.js';
 export * from './schemas/product.schema.js';
 export * from './schemas/order.schema.js';
+export * from './schemas/container.schema.js';
 
 // Types
 export * from './types/user.types.js';

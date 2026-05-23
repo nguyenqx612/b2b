@@ -1,0 +1,37 @@
+{
+  "name": "HarborLane B2B",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": true
+    }
+  },
+  "forwardPorts": [3000, 3001, 5432, 6379, 9000, 9001],
+  "portsAttributes": {
+    "3000": {
+      "label": "Web (HarborLane)",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "API",
+      "visibility": "public"
+    },
+    "9001": {
+      "label": "MinIO Console"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "Prisma.prisma",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "AUTH_TRUST_HOST": "true"
+  }
+}

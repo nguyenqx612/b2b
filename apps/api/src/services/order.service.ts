@@ -54,10 +54,23 @@ export async function createOrder(input: CreatePOInput, buyerId: string) {
   );
 }
 
-export async function updateItems(poId: string, input: UpdatePOItemsInput, userId: string) {
+export async function updateItems(poId: string, input: UpdatePOItemsInput, userId: string, role: string) {
   const po = await repo.assertParticipant(poId, userId);
   if (!['draft', 'submitted', 'acknowledged'].includes(po.status)) {
     throw Object.assign(new Error('Items cannot be edited in the current status'), { status: 422 });
+  }
+
+  const buyerEditable = po.status === 'draft' || po.status === 'submitted';
+  const sellerEditable = po.status === 'acknowledged';
+
+  if (role === 'buyer' && !buyerEditable) {
+    throw Object.assign(new Error('Buyers cannot edit items in the current status'), { status: 403 });
+  }
+  if (role === 'seller' && !sellerEditable) {
+    throw Object.assign(new Error('Sellers cannot edit items in the current status'), { status: 403 });
+  }
+  if (role !== 'buyer' && role !== 'seller' && role !== 'admin') {
+    throw Object.assign(new Error('Access denied'), { status: 403 });
   }
 
   const products = await prisma.product.findMany({

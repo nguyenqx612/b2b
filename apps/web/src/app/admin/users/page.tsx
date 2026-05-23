@@ -1,49 +1,45 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { DataTable } from '@/components/layout/DataTable';
+import { UserActions } from '@/components/admin/UserActions';
 
 interface User {
-  id: string; email: string; role: string;
-  companyName: string | null; isActive: boolean; createdAt: string;
+  id: string;
+  email: string;
+  role: string;
+  companyName: string | null;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export default async function AdminUsersPage() {
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
-  const users = await apiClient.get<User[]>('/api/admin/users', token);
+  const token = await getSessionToken();
+  const { items: users, total } = await apiClient.get<{ items: User[]; total: number }>(
+    '/api/admin/users',
+    token,
+  );
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">User Management</h1>
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Email</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Company</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Role</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Joined</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{u.email}</td>
-                <td className="px-4 py-3 text-gray-700">{u.companyName ?? '—'}</td>
-                <td className="px-4 py-3 capitalize">
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">{u.role}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                    {u.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <PageHeader title="User Management" description={`${total} users`} />
+      <DataTable
+        data={users}
+        keyFn={(u) => u.id}
+        emptyMessage="No users found"
+        columns={[
+          { key: 'email', header: 'Email', cell: (u) => u.email },
+          { key: 'company', header: 'Company', cell: (u) => u.companyName ?? '—' },
+          { key: 'role', header: 'Role', cell: (u) => <span className="capitalize">{u.role}</span> },
+          { key: 'joined', header: 'Joined', cell: (u) => new Date(u.createdAt).toLocaleDateString() },
+          {
+            key: 'actions',
+            header: 'Actions',
+            className: 'text-right',
+            cell: (u) => <UserActions user={u} />,
+          },
+        ]}
+      />
     </div>
   );
 }

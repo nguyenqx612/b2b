@@ -1,12 +1,13 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
 import { POStatusBadge } from '@/components/orders/POStatusBadge';
+import type { OrderStatus } from '@b2b/shared';
 import Link from 'next/link';
 
 interface AdminOrder {
   id: string;
   poNumber: string;
-  status: string;
+  status: OrderStatus;
   currentVersion: number;
   shippingTerms: string | null;
   createdAt: string;
@@ -26,22 +27,24 @@ interface Props {
 }
 
 export default async function AdminOrdersPage({ searchParams }: Props) {
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
+  const token = await getSessionToken();
   const params = await searchParams;
 
   const qs = new URLSearchParams();
   if (params.status && params.status !== 'all') qs.set('status', params.status);
   if (params.search) qs.set('search', params.search);
 
-  const orders = await apiClient.get<AdminOrder[]>(`/api/admin/orders?${qs}`, token);
+  const { items: orders, total } = await apiClient.get<{ items: AdminOrder[]; total: number }>(
+    `/api/admin/orders?${qs}`,
+    token,
+  );
   const activeStatus = params.status ?? 'all';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">All Orders</h1>
-        <span className="text-sm text-gray-500">{orders.length} order{orders.length !== 1 ? 's' : ''}</span>
+        <span className="text-sm text-muted-foreground">{total} order{total !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Filters */}
@@ -118,7 +121,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                     <div className="text-xs text-gray-400">{order.seller.email}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <POStatusBadge status={order.status as any} />
+                    <POStatusBadge status={order.status} />
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-center">
                     {order._count?.items ?? '—'}

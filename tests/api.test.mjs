@@ -228,6 +228,59 @@ console.log('\nPRODUCTS (as seller)');
   }
 }
 
+// ─── PUBLIC CATALOG (no auth) ────────────────────────────────────────────────
+console.log('\nPUBLIC CATALOG (no auth)');
+
+{
+  const r = await req('GET', '/api/public/products');
+  if (r.status === 200 && Array.isArray(r.json?.items)) {
+    const jsonStr = JSON.stringify(r.json);
+    if (!jsonStr.includes('"priceUsdCents"')) {
+      pass('GET /api/public/products → no auth (200, no priceUsdCents)');
+    } else {
+      fail('GET /api/public/products → no auth (200, no priceUsdCents)', 'response leaked priceUsdCents');
+    }
+  } else {
+    fail('GET /api/public/products → no auth (200, items array)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+{
+  const r = await req('GET', '/api/public/products/categories');
+  if (r.status === 200 && Array.isArray(r.json?.categories)) {
+    pass('GET /api/public/products/categories → no auth (200)');
+  } else {
+    fail('GET /api/public/products/categories → no auth (200)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+if (productId) {
+  const r = await req('GET', `/api/public/products/${productId}`);
+  if (r.status === 200 && r.json?.id === productId && r.json?.priceUsdCents === undefined) {
+    pass('GET /api/public/products/:id → no auth (200, buyer-safe shape)');
+  } else {
+    fail('GET /api/public/products/:id → no auth (200, buyer-safe shape)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+{
+  const r = await req('GET', '/api/public/products/image-url?key=invalid');
+  if (r.status === 400 || r.status === 404) {
+    pass('GET /api/public/products/image-url → invalid key rejected');
+  } else {
+    fail('GET /api/public/products/image-url → invalid key rejected', `got ${r.status}`);
+  }
+}
+
+{
+  const r = await req('GET', '/api/products');
+  if (r.status === 401) {
+    pass('GET /api/products → authenticated route still requires auth (401)');
+  } else {
+    fail('GET /api/products → authenticated route still requires auth (401)', `got ${r.status}`);
+  }
+}
+
 {
   const r = await req('GET', '/api/products', null, sellerToken);
   if (r.status === 200) {
@@ -557,6 +610,20 @@ console.log('\nDOCUMENTS');
     pass('POST /api/documents/:poId/generate → unrelated seller denied (403)');
   } else {
     fail('POST /api/documents/:poId/generate → unrelated seller denied (403)', `got ${r.status}: ${JSON.stringify(r.json)}`);
+  }
+}
+
+// ─── CONTAINER VALIDATION ───────────────────────────────────────────────────
+console.log('\nCONTAINER VALIDATION');
+
+{
+  const r = await req('POST', `/api/container/${orderId}/simulate`, {
+    containerType: 'invalid_size',
+  }, buyerToken);
+  if (r.status === 422 || r.status === 400) {
+    pass('POST /api/container/:poId/simulate → invalid containerType rejected');
+  } else {
+    fail('POST /api/container/:poId/simulate → invalid containerType rejected', `got ${r.status}`);
   }
 }
 

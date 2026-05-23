@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import type { JWT } from 'next-auth/jwt';
 import { loginSchema } from '@b2b/shared';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -18,7 +19,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null;
           }
 
-          const apiUrl = process.env.API_URL || 'http://b2b-api-1:3001';
+          const apiUrl = process.env.API_URL ?? 'http://api:3001';
 
           const res = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
@@ -44,18 +45,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.id = user.id as string;
-        token.role = (user as any).role;
-        token.accessToken = (user as any).accessToken;
-        token.companyName = (user as any).companyName;
+        token.id = user.id;
+        token.role = user.role;
+        token.accessToken = user.accessToken;
+        token.companyName = user.companyName;
       }
       return token;
     },
     session({ session, token }) {
-      session.user.id = token.id as string;
-      (session.user as any).role = token.role;
-      (session.user as any).accessToken = token.accessToken;
-      (session.user as any).companyName = token.companyName;
+      const t = token as JWT;
+      session.user.id = t.id;
+      session.user.role = t.role;
+      session.user.accessToken = t.accessToken;
+      session.user.companyName = t.companyName ?? null;
       return session;
     },
   },

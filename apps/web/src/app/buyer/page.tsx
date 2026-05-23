@@ -1,19 +1,6 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { redirect } from 'next/navigation';
+import { DASHBOARD_BY_ROLE } from '@/lib/routes';
 
 export default function BuyerPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirect to catalog
-    router.push('/buyer/catalog');
-  }, [router]);
-
-  return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <p>Redirecting to catalog...</p>
-    </div>
-  );
+  redirect(DASHBOARD_BY_ROLE.buyer);
 }

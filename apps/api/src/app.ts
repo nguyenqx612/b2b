@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { authRouter } from './routes/auth.routes.js';
+import { publicProductsRouter } from './routes/public-products.routes.js';
 import { productsRouter } from './routes/products.routes.js';
 import { ordersRouter } from './routes/orders.routes.js';
 import { messagesRouter } from './routes/messages.routes.js';
@@ -36,6 +37,7 @@ export function createApp() {
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
   app.use('/api/auth', authRouter);
+  app.use('/api/public/products', publicProductsRouter);
   app.use('/api/products', productsRouter);
   app.use('/api/orders', ordersRouter);
   app.use('/api/messages', messagesRouter);

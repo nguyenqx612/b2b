@@ -1,10 +1,10 @@
-'use client';
+import { Suspense } from 'react';
+import NewOrderPageClient from './NewOrderClient';
 
 export default function NewOrderPage() {
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Create Purchase Order (Coming Soon)</h1>
-      <p>This feature is being implemented.</p>
-    </div>
+    <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <NewOrderPageClient />
+    </Suspense>
   );
 }

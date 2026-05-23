@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getSocket } from '@/lib/socket';
+import { getPublicApiUrl, apiClient } from '@/lib/api-client';
 
 interface Message {
   id: string;
@@ -24,7 +25,7 @@ function FileDownloadLink({ s3Key, fileName, token }: { s3Key: string; fileName:
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+  const API = getPublicApiUrl();
 
   async function getSignedUrl() {
     if (url) {
@@ -122,18 +123,11 @@ export function MessageThread({ poId, initialMessages, token }: Props) {
     formData.append('file', file);
 
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-      const res = await fetch(`${API}/api/messages/${poId}/attachments`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to upload file');
-      }
-
-      const data = await res.json();
+      const data = await apiClient.upload<{ message: Message }>(
+        `/api/messages/${poId}/attachments`,
+        formData,
+        token,
+      );
       setMessages((prev) => [...prev, data.message]);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';

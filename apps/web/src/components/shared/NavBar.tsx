@@ -9,7 +9,7 @@ import type { Role } from '@b2b/shared';
 interface NavItem { href: string; label: string }
 
 const BUYER_NAV: NavItem[] = [
-  { href: '/buyer/catalog', label: 'Marketplace' },
+  { href: '/catalog', label: 'Marketplace' },
   { href: '/buyer/orders',  label: 'My Orders' },
 ];
 
@@ -31,7 +31,7 @@ const NAV_MAP: Record<Role, NavItem[]> = {
 };
 
 const HOME_MAP: Record<Role, string> = {
-  buyer:  '/buyer/catalog',
+  buyer:  '/buyer/orders',
   seller: '/seller/catalog',
   admin:  '/admin/users',
 };
@@ -45,7 +45,7 @@ interface Props {
 export function NavBar({ role, email, companyName }: Props) {
   const pathname = usePathname();
   const navItems = NAV_MAP[role] ?? [];
-  const homeHref = HOME_MAP[role] ?? '/buyer/catalog';
+  const homeHref = HOME_MAP[role] ?? '/catalog';
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#A8BEBD]/20 bg-[#062423] shadow-sm">

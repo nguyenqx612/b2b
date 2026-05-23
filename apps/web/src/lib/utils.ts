@@ -5,12 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCents(cents: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
+export function formatCents(cents: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 }
 
-export function formatCentsRange(min: number, max: number, currency = 'USD'): string {
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n / 100);
-  return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`;
+export function formatCentsRange(min: number, max: number): string {
+  if (min === max) return formatCents(min);
+  return `${formatCents(min)} – ${formatCents(max)}`;
 }

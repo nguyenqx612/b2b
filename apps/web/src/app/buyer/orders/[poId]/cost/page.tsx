@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 
@@ -25,8 +25,7 @@ function usd(cents: number) {
 
 export default async function CostBreakdownPage({ params }: Props) {
   const { poId } = await params;
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
+  const token = await getSessionToken();
 
   let breakdown: CostBreakdown | null = null;
   let fetchError = '';

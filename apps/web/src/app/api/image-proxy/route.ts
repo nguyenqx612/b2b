@@ -1,33 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 
 function isValidProductImageKey(key: string) {
   return key.startsWith('products/') && !key.startsWith('/') && !key.includes('..') && !key.includes('\\');
 }
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken;
-  const key = req.nextUrl.searchParams.get('key');
+async function fetchPublicImageUrl(apiUrl: string, key: string) {
+  const res = await fetch(
+    `${apiUrl}/api/public/products/image-url?key=${encodeURIComponent(key)}`,
+    { cache: 'no-store' },
+  );
+  if (!res.ok) return null;
+  const body = await res.json();
+  return body.url as string;
+}
 
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
-  }
+export async function GET(req: NextRequest) {
+  const key = req.nextUrl.searchParams.get('key');
 
   if (!key || !isValidProductImageKey(key)) {
     return NextResponse.json({ error: 'Invalid image key' }, { status: 400 });
   }
 
-  const apiUrl = process.env.API_URL || 'http://b2b-api-1:3001';
-  const signedUrlRes = await fetch(`${apiUrl}/api/messages/s3-signed-url?key=${encodeURIComponent(key)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
+  const apiUrl = process.env.API_URL ?? 'http://api:3001';
+  const url = await fetchPublicImageUrl(apiUrl, key);
 
-  if (!signedUrlRes.ok) {
-    return NextResponse.json({ error: 'Image not available' }, { status: signedUrlRes.status });
+  if (!url) {
+    return NextResponse.json({ error: 'Image not available' }, { status: 404 });
   }
 
-  const { url } = await signedUrlRes.json();
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, {
+    headers: { 'Cache-Control': 'public, max-age=300' },
+  });
 }

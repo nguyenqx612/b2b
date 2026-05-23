@@ -1,19 +1,5 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { redirect } from 'next/navigation';
 
 export default function AdminPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirect to users page
-    router.push('/admin/users');
-  }, [router]);
-
-  return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <p>Redirecting to admin dashboard...</p>
-    </div>
-  );
+  redirect('/admin/users');
 }

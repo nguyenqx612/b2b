@@ -1,6 +1,6 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
-import type { PurchaseOrder } from '@b2b/shared';
+import type { PurchaseOrder, POVersion } from '@b2b/shared';
 import { POStatusBadge } from '@/components/orders/POStatusBadge';
 import { POLineItems } from '@/components/orders/POLineItems';
 import { POVersionHistory } from '@/components/orders/POVersionHistory';
@@ -9,15 +9,25 @@ import Link from 'next/link';
 
 interface Props { params: Promise<{ poId: string }> }
 
+interface OrderMessage {
+  id: string;
+  senderId: string;
+  messageType: 'text' | 'file' | 'system';
+  body: string | null;
+  fileName: string | null;
+  fileS3Key: string | null;
+  sender: { email: string; companyName: string | null; role: string };
+  createdAt: string;
+}
+
 export default async function BuyerOrderDetailPage({ params }: Props) {
   const { poId } = await params;
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
+  const token = await getSessionToken();
 
   const [order, versions, messages] = await Promise.all([
     apiClient.get<PurchaseOrder>(`/api/orders/${poId}`, token),
-    apiClient.get<any[]>(`/api/orders/${poId}/versions`, token),
-    apiClient.get<any[]>(`/api/messages/${poId}`, token),
+    apiClient.get<POVersion[]>(`/api/orders/${poId}/versions`, token),
+    apiClient.get<OrderMessage[]>(`/api/messages/${poId}`, token),
   ]);
 
   return (

@@ -5,7 +5,7 @@ import { useState } from 'react';
 interface Version {
   id: string;
   versionNumber: number;
-  changedByUser: { email: string; companyName: string | null };
+  changedByUser?: { email: string; companyName: string | null };
   changeReason: string | null;
   createdAt: string;
 }
@@ -31,7 +31,7 @@ export function POVersionHistory({ versions }: { versions: Version[] }) {
               <div className="text-sm">
                 <span className="font-medium">v{v.versionNumber}</span>
                 <span className="mx-2 text-gray-400">·</span>
-                <span className="text-gray-600">{v.changedByUser.companyName ?? v.changedByUser.email}</span>
+                <span className="text-gray-600">{v.changedByUser?.companyName ?? v.changedByUser?.email ?? 'Unknown'}</span>
                 <span className="mx-2 text-gray-400">·</span>
                 <span className="text-gray-400 text-xs">{new Date(v.createdAt).toLocaleString()}</span>
               </div>

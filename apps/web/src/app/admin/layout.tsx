@@ -1,9 +1,5 @@
+import { RoleLayout } from '@/components/layout/RoleLayout';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ minHeight: '100vh' }}>
-      <main style={{ padding: '1.5rem', maxWidth: '1536px', marginLeft: 'auto', marginRight: 'auto' }}>
-        {children}
-      </main>
-    </div>
-  );
+  return <RoleLayout expectedRole="admin">{children}</RoleLayout>;
 }

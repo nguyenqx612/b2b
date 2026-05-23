@@ -1,12 +1,11 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
 import type { PurchaseOrder } from '@b2b/shared';
 import Link from 'next/link';
 import { POStatusBadge } from '@/components/orders/POStatusBadge';
 
 export default async function SellerOrdersPage() {
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
+  const token = await getSessionToken();
   const orders = await apiClient.get<PurchaseOrder[]>('/api/orders', token);
 
   return (
@@ -32,7 +31,7 @@ export default async function SellerOrdersPage() {
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono font-medium">{order.poNumber}</td>
-                  <td className="px-4 py-3 text-gray-700">{(order as any).buyer?.companyName ?? (order as any).buyer?.email ?? order.buyerId}</td>
+                  <td className="px-4 py-3 text-gray-700">{order.buyer?.companyName ?? order.buyer?.email ?? order.buyerId}</td>
                   <td className="px-4 py-3 text-gray-600">{order.items.length} item(s)</td>
                   <td className="px-4 py-3"><POStatusBadge status={order.status} /></td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{new Date(order.updatedAt).toLocaleDateString()}</td>

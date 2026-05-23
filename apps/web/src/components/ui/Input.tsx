@@ -1,71 +1,20 @@
-import React from 'react';
-import { components, spacing, borderRadius, typography, colors } from '@/lib/design-tokens';
+import * as React from "react"
+import { Input as InputPrimitive } from "@base-ui/react/input"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  icon?: React.ReactNode;
-}
+import { cn } from "@/lib/utils"
 
-export function Input({ label, error, icon, className = '', ...props }: InputProps) {
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-      {label && (
-        <label
-          style={{
-            fontSize: typography.fontSize.sm,
-            fontWeight: typography.fontWeight.medium,
-            color: colors.text.primary,
-          }}
-        >
-          {label}
-        </label>
+    <InputPrimitive
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
       )}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <input
-          style={{
-            width: '100%',
-            padding: `${spacing.sm} ${spacing.md}`,
-            paddingLeft: icon ? `calc(${spacing.lg} + ${spacing.md})` : spacing.md,
-            fontSize: typography.fontSize.base,
-            border: `1px solid ${error ? colors.error : components.input.border}`,
-            borderRadius: borderRadius.md,
-            backgroundColor: props.disabled ? components.input.disabled : components.input.bg,
-            color: colors.text.primary,
-            transition: 'all 200ms',
-            boxSizing: 'border-box',
-          }}
-          onFocus={(e) => {
-            if (!props.disabled) {
-              e.currentTarget.style.borderColor = components.input.focus;
-              e.currentTarget.style.boxShadow = `0 0 0 3px ${components.input.focus}33`;
-            }
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.boxShadow = 'none';
-            e.currentTarget.style.borderColor = error ? colors.error : components.input.border;
-          }}
-          {...props}
-        />
-        {icon && (
-          <div
-            style={{
-              position: 'absolute',
-              left: spacing.md,
-              display: 'flex',
-              alignItems: 'center',
-              color: colors.text.muted,
-            }}
-          >
-            {icon}
-          </div>
-        )}
-      </div>
-      {error && (
-        <span style={{ fontSize: typography.fontSize.sm, color: colors.error }}>
-          {error}
-        </span>
-      )}
-    </div>
-  );
+      {...props}
+    />
+  )
 }
+
+export { Input }

@@ -1,12 +1,11 @@
-import { auth } from '@/lib/auth';
+import { getSessionToken } from '@/lib/session';
 import { apiClient } from '@/lib/api-client';
 import type { ProductSellerView } from '@b2b/shared';
 import Link from 'next/link';
 import { formatCents, formatCentsRange } from '@/lib/utils';
 
 export default async function SellerCatalogPage() {
-  const session = await auth();
-  const token = (session?.user as any)?.accessToken as string;
+  const token = await getSessionToken();
 
   const { items: products } = await apiClient.get<{ items: ProductSellerView[]; total: number }>(
     '/api/products',

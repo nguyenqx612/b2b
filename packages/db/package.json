@@ -15,15 +15,23 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts",
+    "import:tamlong": "node scripts/import-tamlong-products.mjs",
     "studio": "prisma studio",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
-    "@prisma/client": "^6.8.2"
+    "@prisma/client": "^6.8.2",
+    "bcrypt": "^6.0.0"
   },
   "devDependencies": {
     "prisma": "^6.8.2",
-    "typescript": "*"
+    "tsx": "^4.19.4",
+    "typescript": "*",
+    "xlsx": "^0.18.5"
   }
 }

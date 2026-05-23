@@ -1,0 +1,5 @@
+# Override for Codespaces / devcontainer: use standard ports (no Windows conflicts).
+services:
+  postgres:
+    ports:
+      - "5432:5432"

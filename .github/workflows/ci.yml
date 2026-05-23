@@ -2,36 +2,130 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspaces --include-workspace-root
+      - run: npm run lint
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - run: npm ci --workspaces --include-workspace-root
       - run: npm run db:generate
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
       - run: npm run typecheck
 
+  unit-test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspaces --include-workspace-root
+      - run: npm test
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: b2b
+          POSTGRES_PASSWORD: b2b_dev_password
+          POSTGRES_DB: b2b_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspaces --include-workspace-root
+      - run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://b2b:b2b_dev_password@localhost:5432/b2b_dev
+      - run: npm run build --workspace=packages/shared && npm run build --workspace=packages/db
+      - run: npx prisma migrate deploy
+        working-directory: packages/db
+        env:
+          DATABASE_URL: postgresql://b2b:b2b_dev_password@localhost:5432/b2b_dev
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
+          sleep 5
+          docker run --rm --network host minio/mc \
+            alias set local http://localhost:9000 minioadmin minioadmin
+          docker run --rm --network host minio/mc \
+            mb --ignore-existing local/b2b-dev
+      - name: Start API
+        run: |
+          npm run build --workspace=apps/api
+          node apps/api/dist/index.js &
+          echo "Waiting for API..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3001/health && break
+            sleep 2
+          done
+        env:
+          DATABASE_URL: postgresql://b2b:b2b_dev_password@localhost:5432/b2b_dev
+          REDIS_URL: redis://localhost:6379
+          S3_ENDPOINT: http://localhost:9000
+          S3_ACCESS_KEY: minioadmin
+          S3_SECRET_KEY: minioadmin
+          S3_BUCKET: b2b-dev
+          S3_FORCE_PATH_STYLE: "true"
+          API_JWT_SECRET: ci_test_jwt_secret_minimum_32_chars_long!!
+          NODE_ENV: test
+      - run: npm run test:api
+      - run: npm run test:uat
+
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Build API image
         run: docker build -f apps/api/Dockerfile -t b2b-api:ci .
-
       - name: Build Web image
         run: docker build -f apps/web/Dockerfile -t b2b-web:ci .
