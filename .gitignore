@@ -3,6 +3,7 @@ dist/
 .next/
 .env
 .env.local
+.devcontainer/.codespace-name
 *.log
 .DS_Store
 coverage/

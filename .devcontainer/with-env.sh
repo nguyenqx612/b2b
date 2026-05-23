@@ -19,4 +19,8 @@ if [[ -f /home/node/.codespaces/shared/environment ]]; then
   set +a
 fi
 
+if [[ -n "${CODESPACE_NAME:-}" ]]; then
+  echo "$CODESPACE_NAME" > "$ROOT/.devcontainer/.codespace-name"
+fi
+
 exec "$@"

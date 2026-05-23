@@ -20,8 +20,14 @@ const os = require('os');
 
 function detectCodespaceName() {
   if (process.env.CODESPACE_NAME) return process.env.CODESPACE_NAME;
-  if (process.env.GITHUB_CODESPACES === 'true') return os.hostname();
-  if (fs.existsSync('/workspaces/b2b')) return os.hostname();
+  const nameFile = path.join(__dirname, '.codespace-name');
+  if (fs.existsSync(nameFile)) {
+    return fs.readFileSync(nameFile, 'utf8').trim();
+  }
+  if (process.env.GITHUB_CODESPACES === 'true' || process.env.CODESPACES === 'true') {
+    return null;
+  }
+  if (fs.existsSync('/workspaces/b2b')) return null;
   return null;
 }
 

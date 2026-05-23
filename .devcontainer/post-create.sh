@@ -3,6 +3,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+if [[ -n "${CODESPACE_NAME:-}" ]]; then
+  echo "$CODESPACE_NAME" > .devcontainer/.codespace-name
+fi
+
 COMPOSE="docker compose -f docker-compose.yml -f .devcontainer/docker-compose.devcontainer.yml"
 
 echo "=== Configuring environment ==="
