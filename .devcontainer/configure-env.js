@@ -43,6 +43,7 @@ function setEnv(key, value) {
 }
 
 if (codespaceName) {
+  fs.writeFileSync(path.join(__dirname, '.codespace-name'), `${codespaceName}\n`);
   const webUrl = `https://${codespaceName}-3000.${domain}`;
   const apiPublicUrl = `https://${codespaceName}-3001.${domain}`;
   setEnv('NEXTAUTH_URL', webUrl);
