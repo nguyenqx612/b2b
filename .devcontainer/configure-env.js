@@ -16,9 +16,16 @@ if (!fs.existsSync(envPath)) {
   process.exit(0);
 }
 
-const codespaceName =
-  process.env.CODESPACE_NAME ||
-  (process.env.GITHUB_CODESPACES === 'true' ? require('os').hostname() : null);
+const os = require('os');
+
+function detectCodespaceName() {
+  if (process.env.CODESPACE_NAME) return process.env.CODESPACE_NAME;
+  if (process.env.GITHUB_CODESPACES === 'true') return os.hostname();
+  if (fs.existsSync('/workspaces/b2b')) return os.hostname();
+  return null;
+}
+
+const codespaceName = detectCodespaceName();
 const domain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN || 'app.github.dev';
 
 let content = fs.readFileSync(envPath, 'utf8');

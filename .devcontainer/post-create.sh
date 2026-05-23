@@ -14,6 +14,10 @@ npm install
 echo "=== Generating Prisma client ==="
 npm run db:generate
 
+echo "=== Building workspace packages ==="
+bash .devcontainer/with-env.sh npm run build --workspace=packages/shared
+bash .devcontainer/with-env.sh npm run build --workspace=packages/db
+
 echo "=== Starting infra (postgres, redis, minio) ==="
 $COMPOSE up -d postgres redis minio minio-init
 
