@@ -26,8 +26,8 @@ for i in {1..30}; do
 done
 
 echo "=== Running migrations and seed ==="
-npm run db:migrate
-npm run db:seed
+bash .devcontainer/with-env.sh npm run db:migrate
+bash .devcontainer/with-env.sh npm run db:seed
 
 echo ""
 echo "HarborLane Codespace ready."

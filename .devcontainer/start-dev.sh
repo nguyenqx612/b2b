@@ -27,7 +27,7 @@ if [[ -f "$PID_FILE" ]]; then
   kill "$old_pid" 2>/dev/null || true
 fi
 
-nohup npm run dev >"$LOG_FILE" 2>&1 &
+nohup bash .devcontainer/with-env.sh npm run dev >"$LOG_FILE" 2>&1 &
 echo $! >"$PID_FILE"
 
 for i in {1..60}; do

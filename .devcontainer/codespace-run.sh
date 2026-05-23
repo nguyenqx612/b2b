@@ -14,8 +14,8 @@ echo "=== Start infra ==="
 docker compose -f docker-compose.yml -f .devcontainer/docker-compose.devcontainer.yml up -d postgres redis minio minio-init
 
 echo "=== DB migrate + seed (safe to re-run) ==="
-npm run db:migrate
-npm run db:seed
+bash .devcontainer/with-env.sh npm run db:migrate
+bash .devcontainer/with-env.sh npm run db:seed
 
 echo "=== Start API + web ==="
 bash .devcontainer/start-dev.sh
