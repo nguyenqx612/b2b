@@ -155,8 +155,8 @@ export function Sidebar({ isOpen, onClose, items, title }: SidebarProps) {
  */
 export const buyerNavItems: NavItem[] = [
   {
-    label: 'Browse Catalog',
-    href: '/catalog',
+    label: 'My Vendors',
+    href: '/buyer/vendors',
     icon: <ShoppingCart size={18} />,
   },
   {

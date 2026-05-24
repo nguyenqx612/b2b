@@ -15,8 +15,11 @@ import { brand } from '@/lib/design-tokens';
 export function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const defaultRole = searchParams.get('role') === 'seller' ? 'seller' : 'buyer';
-  const [role, setRole] = useState<'buyer' | 'seller'>(defaultRole);
+  const defaultRole =
+    searchParams.get('role') === 'seller' ? 'seller' :
+    searchParams.get('role') === 'shipper' ? 'shipper' :
+    'buyer';
+  const [role, setRole] = useState<'buyer' | 'seller' | 'shipper'>(defaultRole);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -70,8 +73,8 @@ export function RegisterForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label className="mb-2 block">I am a</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {(['buyer', 'seller'] as const).map((r) => (
+            <div className="grid grid-cols-3 gap-3">
+              {(['buyer', 'seller', 'shipper'] as const).map((r) => (
                 <button
                   key={r}
                   type="button"

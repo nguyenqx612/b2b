@@ -16,6 +16,14 @@ enum Role {
   buyer
   seller
   admin
+  shipper
+}
+
+enum QuoteStatus {
+  draft
+  submitted
+  accepted
+  rejected
 }
 
 enum OrderStatus {
@@ -46,6 +54,18 @@ enum DocType {
   us_import_declaration
 }
 
+enum LinkStatus {
+  pending
+  approved
+  blocked
+}
+
+enum LinkSource {
+  admin
+  vendor_invite
+  buyer_request
+}
+
 // ─────────────────────────────────────────────────────────────
 // Users
 // ─────────────────────────────────────────────────────────────
@@ -74,8 +94,122 @@ model User {
   buyerInvoices     ProformaInvoice[] @relation("BuyerInvoices")
   sellerInvoices    ProformaInvoice[] @relation("SellerInvoices")
   auditLogs         AuditLog[]
+  vendorProfile        VendorProfile?
+  shipperProfile       ShipperProfile?
+  buyerVendorLinks     BuyerVendorLink[] @relation("BuyerLinks")
+  sellerVendorLinks    BuyerVendorLink[] @relation("SellerLinks")
+  buyerConversations   VendorConversation[] @relation("BuyerConversations")
+  sellerConversations  VendorConversation[] @relation("SellerConversations")
+  vendorMessagesSent   VendorMessage[]
+  freightQuotes        FreightQuote[] @relation("ShipperQuotes")
 
   @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Vendor profiles & buyer–vendor access
+// ─────────────────────────────────────────────────────────────
+
+model VendorProfile {
+  sellerId         String   @id @map("seller_id")
+  seller           User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  slug             String   @unique @db.VarChar(100)
+  displayName      String   @map("display_name") @db.VarChar(200)
+  tagline          String?  @db.VarChar(300)
+  about            String?  @db.Text
+  websiteUrl       String?  @map("website_url") @db.VarChar(500)
+  logoUrl          String?  @map("logo_url") @db.VarChar(500)
+  teaserCategories    Json      @default("[]") @map("teaser_categories")
+  catalogSourceUrl    String?   @map("catalog_source_url") @db.VarChar(500)
+  catalogLastImportedAt DateTime? @map("catalog_last_imported_at")
+  isPublished         Boolean   @default(true) @map("is_published")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("vendor_profiles")
+}
+
+model BuyerVendorLink {
+  id             String     @id @default(uuid())
+  buyerId        String     @map("buyer_id")
+  buyer          User       @relation("BuyerLinks", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId       String     @map("seller_id")
+  seller         User       @relation("SellerLinks", fields: [sellerId], references: [id], onDelete: Cascade)
+  status         LinkStatus @default(pending)
+  source         LinkSource
+  invitedEmail   String?    @map("invited_email") @db.VarChar(255)
+  rejectionNote  String?    @map("rejection_note") @db.VarChar(500)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  approvedAt     DateTime?  @map("approved_at")
+
+  @@unique([buyerId, sellerId])
+  @@index([sellerId, status], map: "idx_vendor_links_seller")
+  @@index([buyerId, status], map: "idx_vendor_links_buyer")
+  @@map("buyer_vendor_links")
+}
+
+model VendorConversation {
+  id        String   @id @default(uuid())
+  buyerId   String   @map("buyer_id")
+  buyer     User     @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId  String   @map("seller_id")
+  seller    User     @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages VendorMessage[]
+
+  @@unique([buyerId, sellerId])
+  @@map("vendor_conversations")
+}
+
+model VendorMessage {
+  id             String             @id @default(uuid())
+  conversationId String             @map("conversation_id")
+  conversation   VendorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String             @map("sender_id")
+  sender         User               @relation(fields: [senderId], references: [id])
+  body           String?            @db.Text
+  fileS3Key      String?            @map("file_s3_key")
+  fileName       String?            @map("file_name") @db.VarChar(255)
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt(sort: Desc)], map: "idx_vendor_messages_conv")
+  @@map("vendor_messages")
+}
+
+model ShipperProfile {
+  userId         String   @id @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug           String   @unique @db.VarChar(100)
+  displayName    String   @map("display_name") @db.VarChar(200)
+  tagline        String?  @db.VarChar(300)
+  about          String?  @db.Text
+  logoUrl        String?  @map("logo_url") @db.VarChar(500)
+  serviceRegions Json     @default("[]") @map("service_regions")
+  isPublished    Boolean  @default(true) @map("is_published")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("shipper_profiles")
+}
+
+model FreightQuote {
+  id           String       @id @default(uuid())
+  poId         String       @map("po_id")
+  po           PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  shipperId    String       @map("shipper_id")
+  shipper      User         @relation("ShipperQuotes", fields: [shipperId], references: [id])
+  status       QuoteStatus  @default(submitted)
+  freightCents Int          @map("freight_cents")
+  transitDays  Int?         @map("transit_days")
+  notes        String?      @db.Text
+  validUntil   DateTime?    @map("valid_until")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_freight_quotes_po")
+  @@index([shipperId], map: "idx_freight_quotes_shipper")
+  @@map("freight_quotes")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -139,6 +273,7 @@ model PurchaseOrder {
   containerLoads   ContainerLoad[]
   costBreakdowns   CostBreakdown[]
   proformaInvoices ProformaInvoice[]
+  freightQuotes    FreightQuote[]
 
   @@index([buyerId], map: "idx_po_buyer")
   @@index([sellerId], map: "idx_po_seller")

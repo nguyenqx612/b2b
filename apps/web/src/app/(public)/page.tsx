@@ -1,43 +1,29 @@
-import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { CatalogBrowse } from '@/components/catalog/CatalogBrowse';
-import { CategoryStrip, LandingContent } from '@/components/landing/LandingContent';
-import { fetchPublicCategories, fetchPublicProducts } from '@/lib/public-api';
+import { LandingContent } from '@/components/landing/LandingContent';
+import { VendorGrid } from '@/components/vendor/VendorGrid';
+import { apiClient } from '@/lib/api-client';
+import type { VendorListItem } from '@b2b/shared';
 import { pagePadding } from '@/lib/design-tokens';
-import { PUBLIC_CATALOG } from '@/lib/routes';
 
 export default async function HomePage() {
-  const session = await auth();
-  const [{ items, total, page, pageSize }, { categories }] = await Promise.all([
-    fetchPublicProducts({ pageSize: '8' }),
-    fetchPublicCategories(),
-  ]);
+  let vendors: VendorListItem[] = [];
+  try {
+    const data = await apiClient.get<{ items: VendorListItem[] }>('/api/vendors');
+    vendors = data.items;
+  } catch {
+    // API may be unavailable before seed
+  }
 
   return (
     <>
       <LandingContent />
-      <CategoryStrip categories={categories} />
-      <section className={`${pagePadding} py-12`}>
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Featured products</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Handpicked exports from verified Vietnamese sellers</p>
-          </div>
-          <Link href={PUBLIC_CATALOG} className="text-sm font-semibold text-primary hover:text-secondary hover:underline">
-            Browse all →
-          </Link>
+      <section id="vendors" className={`${pagePadding} scroll-mt-24 py-12`}>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-foreground">Manufacturers</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Public overview only — wholesale catalogs require approved access
+          </p>
         </div>
-        <CatalogBrowse
-          items={items}
-          total={total}
-          page={page}
-          pageSize={pageSize}
-          categories={categories}
-          params={{}}
-          viewerRole={session?.user?.role ?? null}
-          viewerId={session?.user?.id ?? null}
-          compact
-        />
+        <VendorGrid vendors={vendors} />
       </section>
     </>
   );

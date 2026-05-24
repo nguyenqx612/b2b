@@ -2,9 +2,10 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { authorize } from '../middleware/authorize.js';
-import { ROLES, ORDER_STATUS } from '@b2b/shared';
+import { ROLES, ORDER_STATUS, adminVendorLinkSchema } from '@b2b/shared';
 import { prisma } from '@b2b/db';
 import { logAudit } from '../services/audit.service.js';
+import * as vendorService from '../services/vendor.service.js';
 
 const paginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -125,6 +126,33 @@ adminRouter.get('/audit', async (req, res, next) => {
       prisma.auditLog.count({ where }),
     ]);
     res.json({ items: logs, total, page, limit });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.get('/vendor-links', async (req, res, next) => {
+  try {
+    const { page, limit } = paginationSchema.parse(req.query);
+    res.json(await vendorService.listAllLinks(page, limit));
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.post('/vendor-links', async (req, res, next) => {
+  try {
+    const input = adminVendorLinkSchema.parse(req.body);
+    const link = await vendorService.adminCreateLink(input.buyerId, input.sellerId, input.status);
+    await logAudit({
+      actorId: req.user!.sub,
+      action: 'vendor_link.created',
+      entityType: 'buyer_vendor_link',
+      entityId: link.id,
+      metadata: { buyerId: input.buyerId, sellerId: input.sellerId, status: input.status },
+      req,
+    });
+    res.status(201).json(link);
   } catch (err) {
     next(err);
   }

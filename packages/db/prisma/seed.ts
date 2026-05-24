@@ -180,6 +180,129 @@ async function main() {
     },
   });
 
+  const wynBuyer = await prisma.user.findUniqueOrThrow({
+    where: { email: 'thewynliving@gmail.com' },
+  });
+
+  const TAMLONG_TEASER_CATEGORIES = [
+    'SOFA',
+    'PET COLLECTION',
+    'STORAGE BASKET',
+    'DINING CHAIR COLLECTION',
+    'BAR CHAIR COLLECTION',
+    'BENCH COLLECTION',
+    'CABINET COLLECTION',
+    'COFFEE CHAIR',
+    'PLASTIC RATTAN TABLE AND CHAIR SET',
+    'POLY RATTAN CAGE',
+    'STOOL COLLECTION',
+    'TABLE',
+  ];
+
+  await prisma.vendorProfile.upsert({
+    where: { sellerId: tamlong.id },
+    update: {
+      slug: 'tam-long-craft',
+      displayName: 'Tam Long Craft',
+      tagline: 'Handcrafted rattan & wicker furniture from Vietnam',
+      about:
+        'Tam Long Craft manufactures and exports furniture and handicrafts from natural materials such as water hyacinth, seagrass, and plastic rattan. We combine traditional Vietnamese craftsmanship with modern design for residential and hospitality spaces.',
+      websiteUrl: 'https://tamlongcraft.com/',
+      catalogSourceUrl: 'https://tamlongcraft.com/',
+      teaserCategories: TAMLONG_TEASER_CATEGORIES,
+      isPublished: true,
+    },
+    create: {
+      sellerId: tamlong.id,
+      slug: 'tam-long-craft',
+      displayName: 'Tam Long Craft',
+      tagline: 'Handcrafted rattan & wicker furniture from Vietnam',
+      about:
+        'Tam Long Craft manufactures and exports furniture and handicrafts from natural materials such as water hyacinth, seagrass, and plastic rattan. We combine traditional Vietnamese craftsmanship with modern design for residential and hospitality spaces.',
+      websiteUrl: 'https://tamlongcraft.com/',
+      catalogSourceUrl: 'https://tamlongcraft.com/',
+      teaserCategories: TAMLONG_TEASER_CATEGORIES,
+      isPublished: true,
+    },
+  });
+
+  await prisma.vendorProfile.upsert({
+    where: { sellerId: seller.id },
+    update: {
+      slug: 'saigon-export-co',
+      displayName: 'Saigon Export Co.',
+      tagline: 'Premium Vietnamese agricultural exports',
+      about: 'Export-grade grains, coffee, and specialty foods from Vietnam.',
+      teaserCategories: ['Grains', 'Coffee'],
+      isPublished: true,
+    },
+    create: {
+      sellerId: seller.id,
+      slug: 'saigon-export-co',
+      displayName: 'Saigon Export Co.',
+      tagline: 'Premium Vietnamese agricultural exports',
+      about: 'Export-grade grains, coffee, and specialty foods from Vietnam.',
+      teaserCategories: ['Grains', 'Coffee'],
+      isPublished: true,
+    },
+  });
+
+  await prisma.buyerVendorLink.upsert({
+    where: { buyerId_sellerId: { buyerId: wynBuyer.id, sellerId: tamlong.id } },
+    update: { status: 'approved', source: 'admin', approvedAt: new Date() },
+    create: {
+      buyerId: wynBuyer.id,
+      sellerId: tamlong.id,
+      status: 'approved',
+      source: 'admin',
+      approvedAt: new Date(),
+    },
+  });
+
+  await prisma.buyerVendorLink.upsert({
+    where: { buyerId_sellerId: { buyerId: buyer.id, sellerId: seller.id } },
+    update: { status: 'approved', source: 'admin', approvedAt: new Date() },
+    create: {
+      buyerId: buyer.id,
+      sellerId: seller.id,
+      status: 'approved',
+      source: 'admin',
+      approvedAt: new Date(),
+    },
+  });
+
+  const shipper = await prisma.user.upsert({
+    where: { email: 'shipper@b2b.local' },
+    update: { passwordHash, role: 'shipper', companyName: 'Pacific Freight Lines', isActive: true },
+    create: {
+      email: 'shipper@b2b.local',
+      passwordHash,
+      role: 'shipper',
+      companyName: 'Pacific Freight Lines',
+      companyAddress: 'Long Beach, CA',
+    },
+  });
+
+  await prisma.shipperProfile.upsert({
+    where: { userId: shipper.id },
+    update: {
+      slug: 'pacific-freight',
+      displayName: 'Pacific Freight Lines',
+      tagline: 'Ocean freight from Vietnam to US West Coast',
+      serviceRegions: ['US West Coast', 'Southeast Asia'],
+      isPublished: true,
+    },
+    create: {
+      userId: shipper.id,
+      slug: 'pacific-freight',
+      displayName: 'Pacific Freight Lines',
+      tagline: 'Ocean freight from Vietnam to US West Coast',
+      about: 'Full-container and LCL ocean freight services specializing in Vietnam–US routes.',
+      serviceRegions: ['US West Coast', 'Southeast Asia'],
+      isPublished: true,
+    },
+  });
+
   const tamlongDataPath = join(prismaDir, '../data/tamlong-products.json');
   let tamlongImported = 0;
   let tamlongSkipped: string[] = [];
@@ -234,6 +357,7 @@ async function main() {
   console.log(`  Buyer:  buyer@b2b.local / ${PASSWORD}`);
   console.log(`  Tam Long Craft seller: tamlongcraft@gmail.com / ${PASSWORD} (${tamlongImported} products)`);
   console.log(`  The Wyn Living buyer: thewynliving@gmail.com / ${PASSWORD}`);
+  console.log(`  Shipper: shipper@b2b.local / ${PASSWORD}`);
   if (tamlongSkipped.length) {
     console.log(`  Skipped ${tamlongSkipped.length} Excel rows (missing FOB/CBM): ${tamlongSkipped.join(', ')}`);
   }

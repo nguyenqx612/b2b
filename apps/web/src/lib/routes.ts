@@ -1,12 +1,11 @@
 import type { Role } from '@b2b/shared';
 
-export const PUBLIC_CATALOG = '/catalog';
-
 /** Default landing page after login for each role. */
 export const DASHBOARD_BY_ROLE: Record<Role, string> = {
-  buyer: '/buyer/orders',
+  buyer: '/buyer/vendors',
   seller: '/seller/catalog',
   admin: '/admin/users',
+  shipper: '/shipper/quotes',
 };
 
 export function dashboardForRole(role: Role | string | undefined | null): string {
@@ -16,9 +15,21 @@ export function dashboardForRole(role: Role | string | undefined | null): string
   return '/auth/login';
 }
 
+export function vendorCatalogPath(slug: string) {
+  return `/buyer/vendors/${slug}/catalog`;
+}
+
+export function vendorProductPath(slug: string, productId: string) {
+  return `/buyer/vendors/${slug}/catalog/${productId}`;
+}
+
+export function vendorTeaserPath(slug: string) {
+  return `/v/${slug}`;
+}
+
 export function isPublicPath(path: string): boolean {
-  if (path === '/' || path === PUBLIC_CATALOG) return true;
-  if (path.startsWith(`${PUBLIC_CATALOG}/`)) return true;
+  if (path === '/') return true;
+  if (path.startsWith('/v/')) return true;
   if (path === '/auth/login' || path === '/auth/register') return true;
   return false;
 }

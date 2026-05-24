@@ -8,6 +8,7 @@ interface Props {
   onAddToOrder?: (product: ProductBuyerView) => void;
   viewerRole?: Role | null;
   viewerId?: string | null;
+  detailHref?: string;
 }
 
 function placeholderGradient(category: string): string {
@@ -30,14 +31,14 @@ function buildOrderHref(sellerId: string, viewerRole?: Role | null) {
   return `/auth/login?callbackUrl=${encodeURIComponent(orderPath)}`;
 }
 
-export function ProductCard({ product, onAddToOrder, viewerRole = null, viewerId = null }: Props) {
+export function ProductCard({ product, onAddToOrder, viewerRole = null, viewerId = null, detailHref }: Props) {
   const sellerName = product.seller?.companyName ?? 'Unknown Seller';
   const isOwnProduct = viewerRole === 'seller' && viewerId === product.sellerId;
-  const detailHref = `/catalog/${product.id}`;
+  const productHref = detailHref ?? `/catalog/${product.id}`;
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
-      <Link href={detailHref} className="relative aspect-[4/3] overflow-hidden">
+      <Link href={productHref} className="relative aspect-[4/3] overflow-hidden">
         {product.images?.[0] ? (
           <img
             src={`/api/image-proxy?key=${encodeURIComponent(product.images[0])}`}
@@ -61,7 +62,7 @@ export function ProductCard({ product, onAddToOrder, viewerRole = null, viewerId
 
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-3">
-          <Link href={detailHref}>
+          <Link href={productHref}>
             <h3 className="line-clamp-2 font-semibold leading-snug text-foreground hover:text-primary hover:underline">
               {product.name}
             </h3>

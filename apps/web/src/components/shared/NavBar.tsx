@@ -9,31 +9,42 @@ import type { Role } from '@b2b/shared';
 interface NavItem { href: string; label: string }
 
 const BUYER_NAV: NavItem[] = [
-  { href: '/catalog', label: 'Marketplace' },
+  { href: '/buyer/vendors', label: 'My Vendors' },
+  { href: '/buyer/messages', label: 'Messages' },
   { href: '/buyer/orders',  label: 'My Orders' },
 ];
 
 const SELLER_NAV: NavItem[] = [
   { href: '/seller/catalog', label: 'My Products' },
+  { href: '/seller/buyers', label: 'Buyers' },
+  { href: '/seller/profile', label: 'Public Profile' },
   { href: '/seller/orders',  label: 'Orders' },
 ];
 
 const ADMIN_NAV: NavItem[] = [
   { href: '/admin/users',  label: 'Users' },
+  { href: '/admin/vendor-links', label: 'Vendor Links' },
   { href: '/admin/orders', label: 'All Orders' },
   { href: '/admin/audit',  label: 'Audit Log' },
+];
+
+const SHIPPER_NAV: NavItem[] = [
+  { href: '/shipper/quotes', label: 'My Quotes' },
+  { href: '/shipper/profile', label: 'Profile' },
 ];
 
 const NAV_MAP: Record<Role, NavItem[]> = {
   buyer:  BUYER_NAV,
   seller: SELLER_NAV,
   admin:  ADMIN_NAV,
+  shipper: SHIPPER_NAV,
 };
 
 const HOME_MAP: Record<Role, string> = {
-  buyer:  '/buyer/orders',
+  buyer:  '/buyer/vendors',
   seller: '/seller/catalog',
   admin:  '/admin/users',
+  shipper: '/shipper/quotes',
 };
 
 interface Props {
@@ -45,7 +56,7 @@ interface Props {
 export function NavBar({ role, email, companyName }: Props) {
   const pathname = usePathname();
   const navItems = NAV_MAP[role] ?? [];
-  const homeHref = HOME_MAP[role] ?? '/catalog';
+  const homeHref = HOME_MAP[role] ?? '/';
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#A8BEBD]/20 bg-[#062423] shadow-sm">

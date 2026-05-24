@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { dashboardForRole, isPublicPath, PUBLIC_CATALOG } from '@/lib/routes';
+import { dashboardForRole, isPublicPath } from '@/lib/routes';
 import { NextResponse } from 'next/server';
 
 function isPublicAsset(path: string) {
@@ -17,11 +17,12 @@ export default auth((req) => {
 
   if (isPublicAsset(path)) return NextResponse.next();
 
-  if (path.startsWith('/api/image-proxy')) return NextResponse.next();
+  if (path === '/catalog' || path.startsWith('/catalog/')) {
+    return NextResponse.redirect(new URL('/', nextUrl.origin));
+  }
 
   if (path === '/buyer/catalog' || path.startsWith('/buyer/catalog/')) {
-    const target = path.replace('/buyer/catalog', PUBLIC_CATALOG) || PUBLIC_CATALOG;
-    return NextResponse.redirect(new URL(target, nextUrl.origin));
+    return NextResponse.redirect(new URL('/buyer/vendors', nextUrl.origin));
   }
 
   const session = req.auth;
@@ -56,6 +57,10 @@ export default auth((req) => {
   }
 
   if (path.startsWith('/buyer') && userRole !== 'buyer' && userRole !== 'admin') {
+    return redirectToDashboard();
+  }
+
+  if (path.startsWith('/shipper') && userRole !== 'shipper' && userRole !== 'admin') {
     return redirectToDashboard();
   }
 

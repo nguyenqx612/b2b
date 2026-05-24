@@ -23,8 +23,8 @@ export default async function BuyerOrdersPage() {
       {orders.length === 0 ? (
         <div className="py-24 text-center text-gray-500">
           <p>No orders yet.</p>
-          <Link href="/catalog" className="mt-2 inline-block text-[#062423] hover:underline text-sm">
-            Browse catalog →
+          <Link href="/buyer/vendors" className="mt-2 inline-block text-[#062423] hover:underline text-sm">
+            Browse vendor catalogs →
           </Link>
         </div>
       ) : (

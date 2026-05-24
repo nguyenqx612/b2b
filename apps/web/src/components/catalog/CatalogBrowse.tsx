@@ -17,6 +17,7 @@ interface CatalogBrowseProps {
   categories: string[];
   params: CatalogBrowseParams;
   basePath?: string;
+  vendorSlug?: string;
   viewerRole?: Role | null;
   viewerId?: string | null;
   compact?: boolean;
@@ -40,6 +41,7 @@ export function CatalogBrowse({
   categories,
   params,
   basePath = '/catalog',
+  vendorSlug,
   viewerRole = null,
   viewerId = null,
   compact = false,
@@ -169,7 +171,13 @@ export function CatalogBrowse({
       ) : (
         <div className={`grid grid-cols-1 gap-5 sm:grid-cols-2 ${compact ? 'lg:grid-cols-4' : 'lg:grid-cols-3 xl:grid-cols-4'}`}>
           {items.map((p) => (
-            <ProductCard key={p.id} product={p} viewerRole={viewerRole} viewerId={viewerId} />
+            <ProductCard
+              key={p.id}
+              product={p}
+              viewerRole={viewerRole}
+              viewerId={viewerId}
+              detailHref={vendorSlug ? `/buyer/vendors/${vendorSlug}/catalog/${p.id}` : undefined}
+            />
           ))}
         </div>
       )}

@@ -33,13 +33,26 @@ export async function findAllForBuyer(options: {
   category?: string;
   search?: string;
   sellerId?: string;
+  allowedSellerIds?: string[];
   page: number;
   pageSize: number;
 }) {
-  const { category, search, sellerId, page, pageSize } = options;
+  const { category, search, sellerId, allowedSellerIds, page, pageSize } = options;
+
+  if (allowedSellerIds !== undefined) {
+    if (allowedSellerIds.length === 0) {
+      return { items: [], total: 0, page, pageSize };
+    }
+    if (sellerId && !allowedSellerIds.includes(sellerId)) {
+      return { items: [], total: 0, page, pageSize };
+    }
+  }
+
   const where: Prisma.ProductWhereInput = {
     isActive: true,
     ...(sellerId ? { sellerId } : {}),
+    ...(allowedSellerIds && !sellerId ? { sellerId: { in: allowedSellerIds } } : {}),
+    ...(allowedSellerIds && sellerId ? { sellerId } : {}),
     ...(category ? { category } : {}),
     ...(search
       ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] }
@@ -60,9 +73,17 @@ export async function findAllForBuyer(options: {
   return { items, total, page, pageSize };
 }
 
-export async function findActiveCategories() {
+export async function findActiveCategories(sellerId?: string, allowedSellerIds?: string[]) {
+  if (allowedSellerIds !== undefined && allowedSellerIds.length === 0) {
+    return [];
+  }
+
   const rows = await prisma.product.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(sellerId ? { sellerId } : {}),
+      ...(allowedSellerIds && !sellerId ? { sellerId: { in: allowedSellerIds } } : {}),
+    },
     select: { category: true },
     distinct: ['category'],
     orderBy: { category: 'asc' },
@@ -71,15 +92,30 @@ export async function findActiveCategories() {
   return rows.map((row) => row.category);
 }
 
+export async function findByIdForBuyer(id: string, allowedSellerIds?: string[]) {
+  const product = await prisma.product.findFirst({
+    where: {
+      id,
+      isActive: true,
+      ...(allowedSellerIds ? { sellerId: { in: allowedSellerIds } } : {}),
+    },
+    select: BUYER_SELECT,
+  });
+  return product;
+}
+
 export async function findAllForSeller(sellerId: string, options: {
   category?: string;
   search?: string;
   page: number;
   pageSize: number;
+  listing?: 'all' | 'listed' | 'hidden';
 }) {
-  const { category, search, page, pageSize } = options;
+  const { category, search, page, pageSize, listing } = options;
   const where: Prisma.ProductWhereInput = {
     sellerId,
+    ...(listing === 'listed' ? { isActive: true } : {}),
+    ...(listing === 'hidden' ? { isActive: false } : {}),
     ...(category ? { category } : {}),
     ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }] } : {}),
   };
@@ -96,13 +132,6 @@ export async function findAllForSeller(sellerId: string, options: {
   ]);
 
   return { items, total, page, pageSize };
-}
-
-export async function findByIdForBuyer(id: string) {
-  return prisma.product.findFirst({
-    where: { id, isActive: true },
-    select: BUYER_SELECT,
-  });
 }
 
 export async function findByIdForSeller(id: string, sellerId: string) {

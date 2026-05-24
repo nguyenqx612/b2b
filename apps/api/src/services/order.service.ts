@@ -1,10 +1,12 @@
 import { prisma } from '@b2b/db';
 import * as repo from '../repositories/order.repository.js';
+import * as vendorService from './vendor.service.js';
 import { canTransition, isValidTransition } from '@b2b/shared';
-import type { CreatePOInput, UpdatePOItemsInput, UpdatePOStatusInput, OrderStatus, TransitionRole } from '@b2b/shared';
+import type { CreatePOInput, UpdatePOItemsInput, UpdatePOStatusInput, OrderStatus, TransitionRole, Role } from '@b2b/shared';
 
-export async function listOrders(userId: string, role: 'buyer' | 'seller' | 'admin') {
-  return repo.findAllForUser(userId, role);
+export async function listOrders(userId: string, role: Role) {
+  if (role === 'shipper') return [];
+  return repo.findAllForUser(userId, role as 'buyer' | 'seller' | 'admin');
 }
 
 export async function getOrder(poId: string, userId: string, role: string) {
@@ -35,6 +37,8 @@ export async function createOrder(input: CreatePOInput, buyerId: string) {
   if (sellerIds[0] !== input.sellerId) {
     throw Object.assign(new Error('Products do not belong to the specified seller'), { status: 422 });
   }
+
+  await vendorService.assertBuyerCanAccessSeller(buyerId, input.sellerId);
 
   const productMap = new Map(products.map((p) => [p.id, p]));
   const items = input.items.map((item) => {

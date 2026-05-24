@@ -4,7 +4,7 @@ import { ROLES } from '../constants/roles.js';
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum([ROLES.BUYER, ROLES.SELLER]),
+  role: z.enum([ROLES.BUYER, ROLES.SELLER, ROLES.SHIPPER]),
   companyName: z.string().min(1).max(200),
   companyAddress: z.string().max(500).optional(),
   taxId: z.string().max(50).optional(),

@@ -19,17 +19,25 @@ interface NavItem {
 
 const NAV_MAP: Record<Role, NavItem[]> = {
   buyer: [
-    { href: '/catalog', label: 'Marketplace' },
+    { href: '/buyer/vendors', label: 'My Vendors' },
+    { href: '/buyer/messages', label: 'Messages' },
     { href: '/buyer/orders', label: 'My Orders' },
   ],
   seller: [
     { href: '/seller/catalog', label: 'My Products' },
+    { href: '/seller/buyers', label: 'Buyers' },
+    { href: '/seller/profile', label: 'Public Profile' },
     { href: '/seller/orders', label: 'Orders' },
   ],
   admin: [
     { href: '/admin/users', label: 'Users' },
+    { href: '/admin/vendor-links', label: 'Vendor Links' },
     { href: '/admin/orders', label: 'All Orders' },
     { href: '/admin/audit', label: 'Audit Log' },
+  ],
+  shipper: [
+    { href: '/shipper/quotes', label: 'My Quotes' },
+    { href: '/shipper/profile', label: 'Profile' },
   ],
 };
 
@@ -66,7 +74,7 @@ function NavLinks({ items, pathname }: { items: NavItem[]; pathname: string }) {
 export function AppShell({ role, email, companyName, children }: AppShellProps) {
   const pathname = usePathname();
   const navItems = NAV_MAP[role] ?? [];
-  const homeHref = HOME_MAP[role] ?? '/catalog';
+  const homeHref = HOME_MAP[role] ?? '/';
 
   return (
     <div className="min-h-screen bg-background">
